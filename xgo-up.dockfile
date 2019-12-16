@@ -1,0 +1,4 @@
+FROM xgo-update:latest
+
+# excute setup script
+RUN apt-get install -y libwebkit2gtk-4.0-dev

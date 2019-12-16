@@ -1,0 +1,51 @@
+FROM karalabe/xgo-1.12:latest
+
+#RUN apt-get update
+
+RUN echo "export GO111MODULE=on" >> /etc/profile
+
+RUN echo "export GOPROXY=https://goproxy.io" >> /etc/profile
+
+RUN echo "export GOROOT=/usr/local/go" >> /etc/profile
+
+RUN echo "export GOPATH=/go" >> /etc/profile
+
+RUN echo "export PATH=$PATH:$GOPATH/bin" >> /etc/profile
+
+RUN echo "export GOROOT_BOOTSTRAP=$GOROOT" >> /etc/profile
+
+
+RUN echo "export GO111MODULE=on" >> /etc/bash.bashrc
+
+RUN echo "export GOPROXY=https://goproxy.io" >> /etc/bash.bashrc
+
+RUN echo "export GOROOT=/usr/local/go" >> /etc/bash.bashrc
+
+RUN echo "export GOPATH=/go" >> /etc/bash.bashrc
+
+RUN echo "export PATH=$PATH:$GOPATH/bin" >> /etc/bash.bashrc
+
+RUN echo "export GOROOT_BOOTSTRAP=$GOROOT" >> /etc/bash.bashrc
+
+
+#RUN echo "export GO111MODULE=on" >> /etc/bash.bashrc
+
+#RUN echo "export GOPROXY=https://goproxy.io" >> /etc/bash.bashrc
+
+#RUN echo "export GO111MODULE=on" >> ~/.bashrc
+
+#RUN echo "export GOPROXY=https://goproxy.io" >> ~/.bashrc
+
+#RUN echo "export GO111MODULE=on" >> ~/.bash_profile
+
+#RUN echo "export GOPROXY=https://goproxy.io" >> ~/.bash_profile
+
+#RUN echo "export GO111MODULE=on" >> ~/.profile
+
+#RUN echo "export GOPROXY=https://goproxy.io" >> ~/.profile
+
+#RUN echo "GO111MODULE=on" >> /etc/environment
+
+#RUN echo "GOPROXY=https://goproxy.io" >> /etc/environment
+
+#RUN source /etc/profile

@@ -1,0 +1,32 @@
+name: SSD_HELPER_WEBVIEW
+common:
+    db:
+        ssd_sku:
+            name: ssd_sku
+            address: rm-bp1o1j9w728nak1995o.mysql.rds.aliyuncs.com
+            port: 3306
+            username: jwdadmin
+            password: U3jtTnG@N
+            charset: utf8mb4
+        ssd_order:
+            name: ssd_order
+            address: rm-bp1o1j9w728nak1995o.mysql.rds.aliyuncs.com
+            port: 3306
+            username: jwdadmin
+            password: U3jtTnG@N
+            charset: utf8mb4
+        ssd_aos:
+            name: ssd_aos
+            address: rm-bp1o1j9w728nak1995o.mysql.rds.aliyuncs.com
+            port: 3306
+            username: jwdadmin
+            password: U3jtTnG@N
+            charset: utf8mb4
+        ssd_tps:
+            name: ssd_tps
+            address: rm-bp1o1j9w728nak1995o.mysql.rds.aliyuncs.com
+            port: 3306
+            username: jwdadmin
+            password: U3jtTnG@N
+            charset: utf8mb4
+debug: true
