@@ -29,4 +29,18 @@ common:
             username: jwdadmin
             password: U3jtTnG@N
             charset: utf8mb4
+        ssd_misc:
+            name: ssd_misc
+            address: rm-bp1o1j9w728nak1995o.mysql.rds.aliyuncs.com
+            port: 3306
+            username: jwdadmin
+            password: U3jtTnG@N
+            charset: utf8mb4
+        ssd_stat:
+            name: ssd_stat
+            address: rm-bp1o1j9w728nak1995o.mysql.rds.aliyuncs.com
+            port: 3306
+            username: jwdadmin
+            password: U3jtTnG@N
+            charset: utf8mb4
 debug: true

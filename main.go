@@ -13,15 +13,160 @@ import (
 	"lib/log"
 	"lib/serror"
 	ssd_aos "model/aos"
+	ssd_misc "model/misc"
 	ssd_order "model/order"
 	"model/sku"
+	ssd_stat "model/stat"
 	ssd_tps "model/tps"
 	"net"
 	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
+	// "strconv"
 )
+
+func getMiscDevices(w http.ResponseWriter, r *http.Request) {
+	shopNo := string(r.Form.Get("shop_no"))
+	shopName := string(r.Form.Get("shop_name"))
+	searchNoArr := make([]string, 0)
+	appVersion := string(r.Form.Get("app_version"))
+	// canary := string(r.Form.Get("canary"))
+
+	// isCanary, err := strconv.Atoi(canary)
+	// serror.Check(err)
+
+	//实例化数据模型
+	shopModel, err := ssd_stat.CreateJwdShopCache()
+	serror.Check(err)
+	defer func() {
+		errClean := shopModel.CloseDB()
+		serror.Check(errClean)
+	}()
+
+	if shopName != "" {
+		//根据门店名称查询门店编码
+		rowsShop, err := shopModel.GetListByName(shopName)
+		serror.Check(err)
+		defer rowsShop.Close()
+
+		for rowsShop.Next() {
+			shopRecord, err := shopModel.ScanRow(rowsShop)
+			serror.Check(err)
+			//计入当前处理数组
+			searchNoArr = append(searchNoArr, shopRecord.ShopNo)
+		}
+	}
+
+	if shopNo != "" {
+		searchNoArr = append(searchNoArr, shopNo)
+	}
+
+	//灰度设备id列表
+	deviceIDMap := make(map[int]int)
+
+	//实例化数据模型
+	canaryDeviceModel, err := ssd_misc.CreateCanaryDevice()
+	serror.Check(err)
+	defer func() {
+		errClean := canaryDeviceModel.CloseDB()
+		serror.Check(errClean)
+	}()
+	//查询灰度设备id列表
+	rowsDeviceCanary, err := canaryDeviceModel.GetList()
+	serror.Check(err)
+	defer rowsDeviceCanary.Close()
+
+	for rowsDeviceCanary.Next() {
+		canaryRecord, err := canaryDeviceModel.ScanRow(rowsDeviceCanary)
+		serror.Check(err)
+		//计入当前灰度设备列表
+		deviceIDMap[canaryRecord.DeviceID] = canaryRecord.DeviceID
+	}
+
+	//实例化数据模型
+	deviceModel, err := ssd_misc.CreateDevice()
+	serror.Check(err)
+	defer func() {
+		errClean := deviceModel.CloseDB()
+		serror.Check(errClean)
+	}()
+
+	rows, err := deviceModel.GetList(searchNoArr, appVersion)
+	serror.Check(err)
+	defer rows.Close()
+
+	//初始化数组
+	pubArr := make([]ssd_misc.Record, 0)
+
+	//循环处理
+	for rows.Next() {
+		oRecord, err := deviceModel.ScanRow(rows)
+		serror.Check(err)
+		//计入当前处理数组
+		pubArr = append(pubArr, oRecord)
+	}
+
+	type resRecord struct {
+		ID          int    `json:"id"`
+		ShopNo      string `json:"shop_no"`
+		ShopName    string `json:"shop_name"`
+		AppVersion  string `json:"app_version"`
+		SerialNo    string `json:"serial_no"`
+		NetworkType string `json:"network_type"`
+		AppEnv      string `json:"app_env"`
+		IsCanary    string `json:"is_canary"`
+		UpdateTime  string `json:"update_time"`
+		CreateTime  string `json:"create_time"`
+	}
+
+	//初始化返回数组
+	resArr := make([]resRecord, 0)
+
+	//获取门店名称
+	if len(pubArr) != 0 {
+		shopNoArr := make([]string, 0)
+		for _, value := range pubArr {
+			shopNoArr = append(shopNoArr, value.ShopNo)
+		}
+
+		rowsShopList, err := shopModel.GetListByShopNoArr(shopNoArr)
+		serror.Check(err)
+		defer rowsShopList.Close()
+
+		//初始化shop map
+		shopMap := make(map[string]string)
+
+		for rowsShopList.Next() {
+			oRecord, err := shopModel.ScanRow(rowsShopList)
+			serror.Check(err)
+			//计入当前处理数组
+			shopMap[oRecord.ShopNo] = oRecord.ShopName
+		}
+
+		for _, value := range pubArr {
+			isCanary := "0"
+			if deviceIDMap[value.ID] != 0 {
+				isCanary = "1"
+			}
+
+			resArr = append(resArr, resRecord{
+				ID:          value.ID,
+				ShopNo:      value.ShopNo,
+				ShopName:    shopMap[value.ShopNo],
+				AppVersion:  value.AppVersion,
+				SerialNo:    value.SerialNo,
+				NetworkType: value.NetworkType,
+				AppEnv:      value.AppEnv,
+				IsCanary:    isCanary,
+				UpdateTime:  value.UpdateTime,
+				CreateTime:  value.CreateTime,
+			})
+		}
+	}
+
+	response(w, resArr)
+}
 
 func get_tps_orders(w http.ResponseWriter, r *http.Request) {
 	orderNo := string(r.Form.Get("order_no"))
@@ -254,6 +399,7 @@ func main() {
 	registerController("/get-ssd-orders", get_ssd_orders)
 	registerController("/get-aos-orders", get_aos_orders)
 	registerController("/get-tps-orders", get_tps_orders)
+	registerController("/get-misc-devices", getMiscDevices)
 
 	go func() {
 		// Set up your http server here

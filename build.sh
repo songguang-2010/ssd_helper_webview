@@ -30,6 +30,7 @@ export GO111MODULE=on
 export GOPROXY=https://goproxy.io
 export GOPATH=/home/songguang/go
 export GOROOT=/usr/local/go
+# export XGO_IN_XGO=1
 # export PATH=$PATH:$GOPATH/bin
 # export GOROOT_BOOTSTRAP=$GOROOT
 
@@ -45,8 +46,8 @@ cp -R $filepath/* ${GOPATH}/src/ssd_helper_webview/
 cp -R ${filepath}/static/vue-demo/dist/* ${GOPATH}/src/ssd_helper_webview/app/
 
 if [ $compileType = "cross" ]; then
-  cd ${GOPATH}/src/ssd_helper_webview/ && ${GOPATH}/bin/xgo --go=1.12 --targets="linux/amd64,windows-7.0/amd64" --image=xgo-update ssd_helper_webview
-  # cd ${GOPATH}/src/ssd_helper_webview/ && ${GOPATH}/bin/xgo --targets="linux/amd64,windows-7.0/amd64" ./
+  cd ${GOPATH}/src/ && ${GOPATH}/bin/xgo --image=xgo-up --targets="linux/amd64,windows-7.0/amd64" -dest ./ssd_helper_webview/ ./ssd_helper_webview
+  # cd ${GOPATH}/src/ && ${GOPATH}/bin/xgo --image=xgo-up --targets="linux/amd64,windows-7.0/amd64" -dest ./ssd_helper_webview/ ./ssd_helper_webview
 else
   cd ${GOPATH}/src/ssd_helper_webview/ && ${GOROOT}/bin/go build -o ssd_helper_webview main.go
 fi

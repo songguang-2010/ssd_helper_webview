@@ -5,6 +5,7 @@ import SpecList from '@/components/SpecList'
 import SsdOrderList from '@/components/SsdOrderList'
 import AosOrderList from '@/components/AosOrderList'
 import TpsOrderList from '@/components/TpsOrderList'
+import MiscDeviceList from '@/components/MiscDeviceList'
 
 Vue.use(Router)
 
@@ -14,10 +15,10 @@ const Home = {
 
 export default new Router({
   routes: [{
-    path: '/',
-    name: 'SSDHelper',
-    component: Home
-  },
+      path: '/',
+      name: 'SSDHelper',
+      component: Home
+    },
     {
       path: '/spec-list',
       name: 'SpecList',
@@ -37,6 +38,11 @@ export default new Router({
       path: '/tps-order-list',
       name: 'TpsOrderList',
       component: TpsOrderList
+    },
+    {
+      path: '/misc-device-list',
+      name: 'MiscDeviceList',
+      component: MiscDeviceList
     }
   ]
 })

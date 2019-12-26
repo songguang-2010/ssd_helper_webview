@@ -17,6 +17,8 @@ import Form from 'ant-design-vue/lib/form'
 import Col from 'ant-design-vue/lib/col'
 import Row from 'ant-design-vue/lib/row'
 import DatePicker from 'ant-design-vue/lib/date-picker'
+import Select from 'ant-design-vue/lib/select'
+import Tag from 'ant-design-vue/lib/tag'
 import 'ant-design-vue/dist/antd.css'
 
 Vue.config.productionTip = false
@@ -33,6 +35,8 @@ Vue.use(Form)
 Vue.use(Col)
 Vue.use(Row)
 Vue.use(DatePicker)
+Vue.use(Select)
+Vue.use(Tag)
 
 /* eslint-disable no-new */
 new Vue({

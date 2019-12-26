@@ -77,7 +77,7 @@ func (oi *SpecInfo) GetListByShopName(shopName string, limit int) (*sql.Rows, er
 	//构造条件语句
 	where := fmt.Sprintf("store_name like '%s%s%s'", "%", shopName, "%")
 	// fmt.Println(where)
-	fields := "id, store_code, store_name, prod_code prod_name, sale_unit, purchase_unit, sale_unit_ratio, purchase_unit_ratio"
+	fields := "id, store_code, store_name, prod_code, prod_name, sale_unit, purchase_unit, sale_unit_ratio, purchase_unit_ratio"
 	rows, err := oi.prepare().Select(fields).Where(where).Order("id asc").Limit(limit).Rows()
 	if err != nil {
 		return nil, err

@@ -29,4 +29,18 @@ common:
             username: dev
             password: ewDKkdQO
             charset: utf8mb4
+        ssd_misc:
+            name: ssd_misc
+            address: 60.205.202.6
+            port: 3306
+            username: dev
+            password: ewDKkdQO
+            charset: utf8mb4
+        ssd_stat:
+            name: ssd_stat
+            address: 60.205.202.6
+            port: 3306
+            username: dev
+            password: ewDKkdQO
+            charset: utf8mb4
 debug: true

@@ -12,9 +12,12 @@ require (
 	lib/logwrap v0.0.0
 	lib/serror v0.0.0
 	model/aos v0.0.0
+	model/misc v0.0.0
 	model/order v0.0.0
 	model/sku v0.0.0
+	model/stat v0.0.0
 	model/tps v0.0.0
+	src.techknowlogick.com/xgo v0.0.0-20191206145604-980bc3ce3f09 // indirect
 )
 
 replace (
@@ -54,6 +57,10 @@ replace model/order v0.0.0 => ./model/order
 replace model/aos v0.0.0 => ./model/aos
 
 replace model/tps v0.0.0 => ./model/tps
+
+replace model/misc v0.0.0 => ./model/misc
+
+replace model/stat v0.0.0 => ./model/stat
 
 replace lib/log v0.0.0 => ./lib/log
 

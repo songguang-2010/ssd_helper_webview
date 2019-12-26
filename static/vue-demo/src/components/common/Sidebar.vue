@@ -43,6 +43,14 @@
           <router-link to="/tps-order-list">支付记录</router-link>
         </a-menu-item>
       </a-sub-menu>
+      <a-sub-menu key="sub5">
+        <span slot="title">
+          <a-icon type="laptop" />设备管理
+        </span>
+        <a-menu-item key="6">
+          <router-link to="/misc-device-list">设备列表</router-link>
+        </a-menu-item>
+      </a-sub-menu>
     </a-menu>
   </a-layout-sider>
 </template>
