@@ -1,2 +1,2 @@
-!dist/*
-!static/vue-demo/node_modules/*
+dist/*
+static/vue-demo/node_modules/*
