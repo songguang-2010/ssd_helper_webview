@@ -13,17 +13,23 @@
       </a-menu-item>
       <a-sub-menu key="sub1">
         <span slot="title">
-          <a-icon type="shop" />商品规格管理
+          <a-icon type="shop" />商品管理
         </span>
-        <a-menu-item key="2">
-          <router-link to="/spec-list">规格列表</router-link>
+        <a-menu-item key="1001">
+          <router-link to="/sku-spec-list">规格列表</router-link>
+        </a-menu-item>
+        <a-menu-item key="1002">
+          <router-link to="/sku-request-list">报货列表</router-link>
+        </a-menu-item>
+        <a-menu-item key="1003">
+          <router-link to="/sku-response-list">收货列表</router-link>
         </a-menu-item>
       </a-sub-menu>
       <a-sub-menu key="sub2">
         <span slot="title">
           <a-icon type="laptop" />终端订单
         </span>
-        <a-menu-item key="3">
+        <a-menu-item key="2001">
           <router-link to="/ssd-order-list">订单记录</router-link>
         </a-menu-item>
       </a-sub-menu>
@@ -31,7 +37,7 @@
         <span slot="title">
           <a-icon type="laptop" />聚合订单
         </span>
-        <a-menu-item key="4">
+        <a-menu-item key="3001">
           <router-link to="/aos-order-list">订单记录</router-link>
         </a-menu-item>
       </a-sub-menu>
@@ -39,7 +45,7 @@
         <span slot="title">
           <a-icon type="laptop" />支付管理
         </span>
-        <a-menu-item key="5">
+        <a-menu-item key="4001">
           <router-link to="/tps-order-list">支付记录</router-link>
         </a-menu-item>
       </a-sub-menu>
@@ -47,7 +53,7 @@
         <span slot="title">
           <a-icon type="laptop" />设备管理
         </span>
-        <a-menu-item key="6">
+        <a-menu-item key="5001">
           <router-link to="/misc-device-list">设备列表</router-link>
         </a-menu-item>
       </a-sub-menu>

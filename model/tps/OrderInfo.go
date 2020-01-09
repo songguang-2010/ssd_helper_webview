@@ -44,11 +44,11 @@ func (oi *OrderInfo) getTableName() (string, error) {
 	return tableName, nil
 }
 
-//设置订单号
+//SetOrderNo ...
 func (oi *OrderInfo) SetOrderNo(orderNo string) error {
-	clientId := "100001"
-	oi.orderNo = clientId + orderNo
-	fmt.Println(oi.orderNo)
+	clientID := "100001"
+	oi.orderNo = clientID + orderNo
+	fmt.Println("orderNo: " + oi.orderNo)
 
 	w := md5.New()
 	io.WriteString(w, oi.orderNo)
@@ -74,9 +74,11 @@ func (oi *OrderInfo) SetOrderNo(orderNo string) error {
 	// if err != nil {
 	// 	return err
 	// }
-	fmt.Println(asc2_1)
-	fmt.Println(asc2_2)
-	hashNum := asc2_1[0] + asc2_2[0] + asc2_3[0] + asc2_4[0]
+	fmt.Println(asc2_1[0])
+	fmt.Println(asc2_2[0])
+	fmt.Println(asc2_3[0])
+	fmt.Println(asc2_4[0])
+	hashNum := int(asc2_1[0]) + int(asc2_2[0]) + int(asc2_3[0]) + int(asc2_4[0])
 	fmt.Println(hashNum)
 	tableNo := hashNum % 20
 	table := fmt.Sprintf("order_%d", tableNo)

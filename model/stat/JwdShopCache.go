@@ -77,7 +77,7 @@ func (oi *JwdShopCache) getFields() []string {
 //GetListByName ...
 func (oi *JwdShopCache) GetListByName(shopName string) (*sql.Rows, error) {
 	var rows *sql.Rows
-	where := fmt.Sprintf("shop_name like '%s%s%s'", "%", shopName, "%")
+	where := fmt.Sprintf("shop_name like '%s%s%s' and shop_status=1", "%", shopName, "%")
 	// limit := "5000"
 	fields := oi.getFields()
 	rows, err := oi.prepare().Select(fields).Where(where).Order("id asc").Rows()

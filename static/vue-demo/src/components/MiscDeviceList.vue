@@ -25,7 +25,7 @@
       </a-form-item>-->
 
       <a-form-item>
-        <a-button type="primary" html-type="submit">Search</a-button>
+        <a-button type="primary" @click="onSearch">Search</a-button>
       </a-form-item>
     </a-form>
 

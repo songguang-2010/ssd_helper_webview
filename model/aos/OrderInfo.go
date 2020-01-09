@@ -89,7 +89,8 @@ func (oi *OrderInfo) getFields() []string {
 	return keys
 }
 
-func (oi *OrderInfo) GetList(shopName string, phone string) (*sql.Rows, error) {
+// GetList ...
+func (oi *OrderInfo) GetList(shopName string, phone string, orderNo string) (*sql.Rows, error) {
 	// len := len(shopId)
 	// prefix := strings.Repeat(string('0'), (10 - len))
 	//构造条件语句
@@ -99,8 +100,11 @@ func (oi *OrderInfo) GetList(shopName string, phone string) (*sql.Rows, error) {
 	if shopName != "" {
 		whereArr = append(whereArr, fmt.Sprintf("shop_name like '%s%s%s'", "%", shopName, "%"))
 	}
+	if orderNo != "" {
+		whereArr = append(whereArr, fmt.Sprintf("orderNo='%s'", orderNo))
+	}
 	if phone != "" {
-		whereArr = append(whereArr, fmt.Sprintf("customer_phone=%s", phone))
+		whereArr = append(whereArr, fmt.Sprintf("customer_phone='%s'", phone))
 	}
 	if len(whereArr) > 0 {
 		for k, v := range whereArr {

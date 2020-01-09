@@ -8,7 +8,7 @@
       </a-form-item>
 
       <a-form-item>
-        <a-button type="primary" html-type="submit">Search</a-button>
+        <a-button type="primary" @click="onSearch">Search</a-button>
       </a-form-item>
     </a-form>
 
@@ -117,8 +117,8 @@ export default {
       },
       form: this.$form.createForm(this, { name: "advanced_search" }),
       payTypeMap: {
-        1: "微信付款码",
-        9: "支付宝付款码"
+        9: "微信付款码",
+        7: "支付宝付款码"
       },
       payStatusMap: {
         0: "未支付",

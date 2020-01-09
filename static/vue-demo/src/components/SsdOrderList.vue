@@ -1,22 +1,32 @@
 <template>
   <div id="components-form-demo-advanced-search">
     <a-form layout="inline" class="ant-advanced-search-form" :form="form" @submit="onSearch">
+      <a-form-item :label="`门店名称`">
+        <a-input v-decorator="[
+                `shopName`
+                ]" />
+      </a-form-item>
       <a-form-item :label="`手机号码`">
         <a-input v-decorator="[
                 `phone`
+                ]" />
+      </a-form-item>
+      <a-form-item :label="`订单编号`">
+        <a-input v-decorator="[
+                `orderNo`
                 ]" />
       </a-form-item>
       <a-form-item :label="`日期`">
         <a-date-picker
           style="width: 100%"
           @change="onDateChange"
-          :defaultValue="moment(dateCurrent, dateFormat)"
+          :defaultValue="$moment(dateCurrent, dateFormat)"
           :format="dateFormat"
         />
       </a-form-item>
 
       <a-form-item>
-        <a-button type="primary" html-type="submit">Search</a-button>
+        <a-button type="primary" @click="onSearch">Search</a-button>
       </a-form-item>
     </a-form>
 
@@ -27,13 +37,17 @@
     <div v-if="data" class="content">
       <a-table :columns="columns" :dataSource="data">
         <!-- <span slot="customTitle"><a-icon type="smile-o" /> Name</span> -->
+        <span
+          slot="create_time_str"
+          slot-scope="text, record"
+        >{{$moment(record.create_time*1000).format('YYYY-MM-DD HH:mm:ss')}}</span>
       </a-table>
     </div>
   </div>
 </template>
 
 <script>
-import moment from "moment";
+// import moment from "moment";
 
 const columns = [
   {
@@ -115,6 +129,12 @@ const columns = [
     title: "代金券金额",
     dataIndex: "voucher_amount",
     key: "voucher_amount"
+  },
+  {
+    title: "创建时间",
+    dataIndex: "create_time",
+    key: "create_time",
+    scopedSlots: { customRender: "create_time_str" }
   }
 ];
 
@@ -127,6 +147,8 @@ export default {
       error: null,
       columns: columns,
       searchValue: {
+        orderNo: "",
+        shopName: "",
         phone: "",
         date: ""
       },
@@ -146,7 +168,8 @@ export default {
     $route: "fetchData"
   },
   methods: {
-    moment,
+    // moment,
+    //日期格式化
     getNowFormatDate() {
       var date = new Date();
       var seperator1 = "-";
@@ -162,6 +185,39 @@ export default {
       var currentdate = year + seperator1 + month + seperator1 + strDate;
       return currentdate;
     },
+    //   时间格式化
+    dateFormat(time) {
+      var date = new Date(time);
+      var year = date.getFullYear();
+      /* 在日期格式中，月份是从0开始的，因此要加0
+       * 使用三元表达式在小于10的前面加0，以达到格式统一  如 09:11:05
+       * */
+      var month =
+        date.getMonth() + 1 < 10
+          ? "0" + (date.getMonth() + 1)
+          : date.getMonth() + 1;
+      var day = date.getDate() < 10 ? "0" + date.getDate() : date.getDate();
+      var hours =
+        date.getHours() < 10 ? "0" + date.getHours() : date.getHours();
+      var minutes =
+        date.getMinutes() < 10 ? "0" + date.getMinutes() : date.getMinutes();
+      var seconds =
+        date.getSeconds() < 10 ? "0" + date.getSeconds() : date.getSeconds();
+      // 拼接
+      return (
+        year +
+        "-" +
+        month +
+        "-" +
+        day +
+        " " +
+        hours +
+        ":" +
+        minutes +
+        ":" +
+        seconds
+      );
+    },
     onDateChange(date, dateString) {
       console.log(date, dateString);
       this.searchValue.date = dateString;
@@ -172,6 +228,8 @@ export default {
     fetchData() {
       this.error = this.post = null;
       this.loading = true;
+      this.searchValue.orderNo = this.form.getFieldsValue().orderNo;
+      this.searchValue.shopName = this.form.getFieldsValue().shopName;
       this.searchValue.phone = this.form.getFieldsValue().phone;
       //默认当天日期
       if (this.searchValue.date == "") {
@@ -187,11 +245,15 @@ export default {
       });
     },
     getOrderList(callback) {
+      var orderNo = this.searchValue.orderNo;
+      var shopName = this.searchValue.shopName;
       var phone = this.searchValue.phone;
       var date = this.searchValue.date;
       this.$ajax
         .get("http://localhost:39493/get-ssd-orders", {
           params: {
+            order_no: orderNo,
+            shop_name: shopName,
             phone: phone,
             date: date
           }

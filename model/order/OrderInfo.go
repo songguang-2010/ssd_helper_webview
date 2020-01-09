@@ -13,9 +13,9 @@ import (
 	"strings"
 )
 
-//数据表字段结构
+//OrderInfoRecord ...
 type OrderInfoRecord struct {
-	Id                int    `json:"id"`
+	ID                int    `json:"id"`
 	Order_no          string `json:"order_no"`
 	Shop_id           string `json:"shop_id"`
 	Shop_name         string `json:"shop_name"`
@@ -31,6 +31,7 @@ type OrderInfoRecord struct {
 	Pay_reduce_amount string `json:"pay_reduce_amount"`
 	Refund_status     string `json:"refund_status"`
 	Voucher_amount    string `json:"voucher_amount"`
+	Create_time       string `json:"create_time"`
 }
 
 //数据模型对象
@@ -89,7 +90,8 @@ func (oi *OrderInfo) getFields() []string {
 	return keys
 }
 
-func (oi *OrderInfo) GetList(shopName string, phone string) (*sql.Rows, error) {
+// GetList ...
+func (oi *OrderInfo) GetList(shopName string, phone string, orderNo string) (*sql.Rows, error) {
 	// len := len(shopId)
 	// prefix := strings.Repeat(string('0'), (10 - len))
 	//构造条件语句
@@ -99,8 +101,11 @@ func (oi *OrderInfo) GetList(shopName string, phone string) (*sql.Rows, error) {
 	if shopName != "" {
 		whereArr = append(whereArr, fmt.Sprintf("shop_name like '%s%s%s'", "%", shopName, "%"))
 	}
+	if orderNo != "" {
+		whereArr = append(whereArr, fmt.Sprintf("order_no='%s'", orderNo))
+	}
 	if phone != "" {
-		whereArr = append(whereArr, fmt.Sprintf("customer_phone=%s", phone))
+		whereArr = append(whereArr, fmt.Sprintf("customer_phone='%s'", phone))
 	}
 	if len(whereArr) > 0 {
 		for k, v := range whereArr {
@@ -121,9 +126,9 @@ func (oi *OrderInfo) GetList(shopName string, phone string) (*sql.Rows, error) {
 	var rows *sql.Rows
 	var err error
 	if where != "" {
-		rows, err = oi.prepare().Select(fields).Where(where).Order("id asc").Limit(limit).Rows()
+		rows, err = oi.prepare().Select(fields).Where(where).Order("id desc").Limit(limit).Rows()
 	} else {
-		rows, err = oi.prepare().Select(fields).Order("id asc").Limit(limit).Rows()
+		rows, err = oi.prepare().Select(fields).Order("id desc").Limit(limit).Rows()
 	}
 
 	if err != nil {

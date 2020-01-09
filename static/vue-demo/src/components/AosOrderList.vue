@@ -1,9 +1,19 @@
 <template>
   <div id="components-form-demo-advanced-search">
     <a-form layout="inline" class="ant-advanced-search-form" :form="form" @submit="onSearch">
+      <a-form-item :label="`门店名称`">
+        <a-input v-decorator="[
+                `shopName`
+                ]" />
+      </a-form-item>
       <a-form-item :label="`手机号码`">
         <a-input v-decorator="[
                 `phone`
+                ]" />
+      </a-form-item>
+      <a-form-item :label="`订单编号`">
+        <a-input v-decorator="[
+                `orderNo`
                 ]" />
       </a-form-item>
       <a-form-item :label="`日期`">
@@ -16,7 +26,7 @@
       </a-form-item>
 
       <a-form-item>
-        <a-button type="primary" html-type="submit">Search</a-button>
+        <a-button type="primary" @click="onSearch">Search</a-button>
       </a-form-item>
     </a-form>
 
@@ -127,6 +137,8 @@ export default {
       error: null,
       columns: columns,
       searchValue: {
+        orderNo: "",
+        shopName: "",
         phone: "",
         date: ""
       },
@@ -172,6 +184,8 @@ export default {
     fetchData() {
       this.error = this.post = null;
       this.loading = true;
+      this.searchValue.orderNo = this.form.getFieldsValue().orderNo;
+      this.searchValue.shopName = this.form.getFieldsValue().shopName;
       this.searchValue.phone = this.form.getFieldsValue().phone;
       //默认当天日期
       if (this.searchValue.date == "") {
@@ -187,11 +201,15 @@ export default {
       });
     },
     getOrderList(callback) {
+      var orderNo = this.searchValue.orderNo;
+      var shopName = this.searchValue.shopName;
       var phone = this.searchValue.phone;
       var date = this.searchValue.date;
       this.$ajax
         .get("http://localhost:39493/get-aos-orders", {
           params: {
+            order_no: orderNo,
+            shop_name: shopName,
             phone: phone,
             date: date
           }
