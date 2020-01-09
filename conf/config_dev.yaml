@@ -1,0 +1,46 @@
+name: SSD_HELPER_WEBVIEW
+common:
+    db:
+        ssd_sku:
+            name: ssd_sku
+            address: 60.205.202.6
+            port: 3306
+            username: dev
+            password: ewDKkdQO
+            charset: utf8mb4
+        ssd_order:
+            name: ssd_order
+            address: 60.205.202.6
+            port: 3306
+            username: dev
+            password: ewDKkdQO
+            charset: utf8mb4
+        ssd_aos:
+            name: ssd_aos
+            address: 60.205.202.6
+            port: 3306
+            username: dev
+            password: ewDKkdQO
+            charset: utf8mb4
+        ssd_tps:
+            name: ssd_tps
+            address: 60.205.202.6
+            port: 3306
+            username: dev
+            password: ewDKkdQO
+            charset: utf8mb4
+        ssd_misc:
+            name: ssd_misc
+            address: 60.205.202.6
+            port: 3306
+            username: dev
+            password: ewDKkdQO
+            charset: utf8mb4
+        ssd_stat:
+            name: ssd_stat
+            address: 60.205.202.6
+            port: 3306
+            username: dev
+            password: ewDKkdQO
+            charset: utf8mb4
+debug: true
