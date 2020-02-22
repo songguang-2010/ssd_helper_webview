@@ -185,7 +185,7 @@ export default {
     getOrderList(callback) {
       var order_no = this.searchValue.order_no;
       this.$ajax
-        .get("http://localhost:39493/get-tps-orders", {
+        .get("/get-tps-orders", {
           params: {
             order_no: order_no
           }

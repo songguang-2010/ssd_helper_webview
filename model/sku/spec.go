@@ -71,14 +71,42 @@ func (oi *SpecInfo) prepare() *gorm.DB {
 	return db.Table(table)
 }
 
-func (oi *SpecInfo) GetListByShopName(shopName string, limit int) (*sql.Rows, error) {
-	// len := len(shopId)
-	// prefix := strings.Repeat(string('0'), (10 - len))
+// GetList ...
+func (oi *SpecInfo) GetList(shopCode string, shopName string, prodName string, limit int) (*sql.Rows, error) {
+	shopCodeLen := len(shopCode)
+	prefix := strings.Repeat(string('0'), (10 - shopCodeLen))
 	//构造条件语句
-	where := fmt.Sprintf("store_name like '%s%s%s'", "%", shopName, "%")
-	// fmt.Println(where)
+	where := ""
+	var whereArr []string
+	if shopName != "" {
+		whereArr = append(whereArr, fmt.Sprintf("store_name like '%s%s%s'", "%", shopName, "%"))
+	}
+	if prodName != "" {
+		whereArr = append(whereArr, fmt.Sprintf("prod_name like '%s%s%s'", "%", prodName, "%"))
+	}
+	if shopCode != "" {
+		whereArr = append(whereArr, fmt.Sprintf("store_code='%s%s'", prefix, shopCode))
+	}
+	if len(whereArr) > 0 {
+		for k, v := range whereArr {
+			if k == 0 {
+				where = fmt.Sprintf("%s", v)
+			} else {
+				where = fmt.Sprintf("%s and %s", where, v)
+			}
+		}
+	}
+
 	fields := "id, store_code, store_name, prod_code, prod_name, sale_unit, purchase_unit, sale_unit_ratio, purchase_unit_ratio"
-	rows, err := oi.prepare().Select(fields).Where(where).Order("id asc").Limit(limit).Rows()
+
+	var rows *sql.Rows
+	var err error
+	if where != "" {
+		rows, err = oi.prepare().Select(fields).Where(where).Order("id asc").Limit(limit).Rows()
+	} else {
+		rows, err = oi.prepare().Select(fields).Order("id asc").Limit(limit).Rows()
+	}
+
 	if err != nil {
 		return nil, err
 	}

@@ -7,7 +7,7 @@
       :style="{ height: '100%', borderRight: 0 }"
     >
       <a-menu-item key="1">
-        <router-link to="/">
+        <router-link to="/home">
           <a-icon type="home" />Dashboard
         </router-link>
       </a-menu-item>

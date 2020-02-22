@@ -5,7 +5,9 @@ import moment from "moment";
 import App from './App'
 import router from './router'
 import axios from 'axios'
+// import VueAxios from 'vue-axios'
 import 'babel-polyfill'
+import store from './store'
 
 import Button from 'ant-design-vue/lib/button'
 import Layout from 'ant-design-vue/lib/layout'
@@ -22,10 +24,6 @@ import Select from 'ant-design-vue/lib/select'
 import Tag from 'ant-design-vue/lib/tag'
 import 'ant-design-vue/dist/antd.css'
 
-Vue.config.productionTip = false
-Vue.prototype.$ajax = axios
-Vue.prototype.$moment = moment
-
 Vue.use(Button)
 Vue.use(Layout)
 Vue.use(Menu)
@@ -40,10 +38,68 @@ Vue.use(DatePicker)
 Vue.use(Select)
 Vue.use(Tag)
 
+// axios 配置
+axios.defaults.timeout = 5000
+axios.defaults.baseURL = '/api'
+if (process.env.NODE_ENV == "production") {
+  axios.defaults.baseURL = '/'
+}
+console.log(process.env.NODE_ENV)
+
+//初始化运行时, 清除token信息
+store.commit("removeToken");
+
+// 添加请求拦截器，在请求头中加token
+axios.interceptors.request.use(
+  config => {
+    if (store.state.token) {
+      config.headers.Authorization = store.state.token;
+    }
+
+    return config;
+  },
+  error => {
+    return Promise.reject(error);
+  });
+
+// http response 拦截器
+axios.interceptors.response.use(
+  response => {
+    return response
+  },
+  error => {
+    if (error.response) {
+      switch (error.response.status) {
+        case 401:
+          // 401 清除token信息
+          store.commit("removeToken");
+
+          // 只有在当前路由不是登录页面才跳转
+          router.currentRoute.path !== 'login' && router.push('/login')
+          // router.replace({
+          //   path: '/login',
+          //   query: {
+          //     redirect: router.currentRoute.path
+          //   },
+          // })
+      }
+    }
+    // console.log(JSON.stringify(error));//console : Error: Request failed with status code 402
+    return Promise.reject(error.response.data)
+  },
+)
+
+// Vue.use(axios, VueAxios)
+
+Vue.config.productionTip = false
+Vue.prototype.$ajax = axios
+Vue.prototype.$moment = moment
+
 /* eslint-disable no-new */
 new Vue({
   el: '#app',
   router,
+  store,
   components: {
     App
   },

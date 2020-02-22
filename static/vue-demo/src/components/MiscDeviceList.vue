@@ -197,7 +197,7 @@ export default {
       var app_version = this.searchValue.app_version;
       // var canary = this.searchValue.canary || 0;
       this.$ajax
-        .get("http://localhost:39493/get-misc-devices", {
+        .get("/get-misc-devices", {
           params: {
             shop_no: shop_no,
             shop_name: shop_name,

@@ -13,6 +13,11 @@
                 `shopName`
                 ]" />
       </a-form-item>
+      <a-form-item :label="`门店编码`">
+        <a-input v-decorator="[
+                `shopCode`
+                ]" />
+      </a-form-item>
       <a-form-item :label="`日期`">
         <a-date-picker
           style="width: 100%"
@@ -20,6 +25,11 @@
           :defaultValue="moment(dateCurrent, dateFormat)"
           :format="dateFormat"
         />
+      </a-form-item>
+      <a-form-item :label="`产品名称`">
+        <a-input v-decorator="[
+                `prodName`
+                ]" />
       </a-form-item>
 
       <a-form-item>
@@ -100,7 +110,9 @@ export default {
       columns: columns,
       searchValue: {
         shopName: "",
-        date: ""
+        shopCode: "",
+        date: "",
+        prodName: ""
       },
       form: this.$form.createForm(this, { name: "advanced_search" }),
       dateFormat: "YYYY-MM-DD",
@@ -145,6 +157,8 @@ export default {
       this.error = this.post = null;
       this.loading = true;
       this.searchValue.shopName = this.form.getFieldsValue().shopName;
+      this.searchValue.shopCode = this.form.getFieldsValue().shopCode;
+      this.searchValue.prodName = this.form.getFieldsValue().prodName;
       //默认当天日期
       if (this.searchValue.date == "") {
         this.searchValue.date = this.dateCurrent;
@@ -161,11 +175,15 @@ export default {
     },
     getSpecList(callback) {
       var shopName = this.searchValue.shopName;
+      var shopCode = this.searchValue.shopCode;
+      var prodName = this.searchValue.prodName;
       var date = this.searchValue.date;
       this.$ajax
-        .get("http://localhost:39493/get-sku-specs", {
+        .get("/get-sku-specs", {
           params: {
             shop_name: shopName,
+            shop_code: shopCode,
+            prod_name: prodName,
             date: date
           }
         })

@@ -29,6 +29,7 @@ import (
 func getSkuResponses(w http.ResponseWriter, r *http.Request) {
 	shopNo := string(r.Form.Get("shop_no"))
 	shopName := string(r.Form.Get("shop_name"))
+	prodName := string(r.Form.Get("prod_name"))
 	searchNoArr := make([]string, 0)
 	dateCurrent := string(r.Form.Get("date_response"))
 
@@ -66,7 +67,7 @@ func getSkuResponses(w http.ResponseWriter, r *http.Request) {
 		serror.Check(errClean)
 	}()
 
-	rows, err := goodsPurchaseModel.GetResponseList(searchNoArr, dateCurrent)
+	rows, err := goodsPurchaseModel.GetResponseList(searchNoArr, dateCurrent, prodName)
 	serror.Check(err)
 	defer rows.Close()
 
@@ -118,6 +119,8 @@ func getSkuResponses(w http.ResponseWriter, r *http.Request) {
 func getSkuRequests(w http.ResponseWriter, r *http.Request) {
 	shopNo := string(r.Form.Get("shop_no"))
 	shopName := string(r.Form.Get("shop_name"))
+	prodName := string(r.Form.Get("prod_name"))
+	//门店名称关键字对应的查询门店编码数组
 	searchNoArr := make([]string, 0)
 	dateCurrent := string(r.Form.Get("date_response"))
 
@@ -155,7 +158,7 @@ func getSkuRequests(w http.ResponseWriter, r *http.Request) {
 		serror.Check(errClean)
 	}()
 
-	rows, err := goodsPurchaseModel.GetRequestList(searchNoArr, dateCurrent)
+	rows, err := goodsPurchaseModel.GetRequestList(searchNoArr, dateCurrent, prodName)
 	serror.Check(err)
 	defer rows.Close()
 
@@ -483,6 +486,8 @@ func getSsdOrders(w http.ResponseWriter, r *http.Request) {
 
 func getSkuSpecs(w http.ResponseWriter, r *http.Request) {
 	shopName := string(r.Form.Get("shop_name"))
+	shopCode := string(r.Form.Get("shop_code"))
+	prodName := string(r.Form.Get("prod_name"))
 	dateCurrent := string(r.Form.Get("date"))
 
 	//实例化数据模型
@@ -498,7 +503,7 @@ func getSkuSpecs(w http.ResponseWriter, r *http.Request) {
 
 	// log.Info("date:", dateCurrent)
 
-	rows, err := specInfoModel.GetListByShopName(shopName, 500)
+	rows, err := specInfoModel.GetList(shopCode, shopName, prodName, 500)
 	serror.Check(err)
 	defer rows.Close()
 
@@ -526,6 +531,22 @@ func getSkuSpecs(w http.ResponseWriter, r *http.Request) {
 
 	// return pubArr, nil
 	response(w, pubArr)
+	// responseError(w, 401)
+}
+
+func login(w http.ResponseWriter, r *http.Request) {
+	// username := string(r.Form.Get("username"))
+	// password := string(r.Form.Get("password"))
+
+	type resRecord struct {
+		Token string `json:"token"`
+	}
+
+	res := &resRecord{
+		Token: "ddddddddd",
+	}
+
+	response(w, res)
 }
 
 func registerController(path string, f func(w http.ResponseWriter, r *http.Request)) {
@@ -536,6 +557,33 @@ func registerController(path string, f func(w http.ResponseWriter, r *http.Reque
 		// fmt.Println("收到客户端请求: ", r.Form.Get("title"))
 		f(w, r)
 	})
+}
+
+func responseError(w http.ResponseWriter, code int) {
+
+	type resError struct {
+		Msg string `json:"msg"`
+	}
+
+	res := &resError{
+		Msg: "error occurred",
+	}
+	b, err := json.Marshal(res)
+	if err != nil {
+		panic(err)
+	}
+	body := string(b)
+
+	//允许访问所有域
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	//header的类型
+	w.Header().Add("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Set("content-type", "application/json")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("Content-Length", fmt.Sprint(len(body)))
+	//状态码
+	w.WriteHeader(code)
+	fmt.Fprint(w, body)
 }
 
 func response(w http.ResponseWriter, data interface{}) {
@@ -594,6 +642,7 @@ func main() {
 	fsh := http.FileServer(http.Dir(exPath + "/app"))
 	http.Handle("/", http.StripPrefix("/", fsh))
 
+	registerController("/login", login)
 	registerController("/get-sku-specs", getSkuSpecs)
 	registerController("/get-sku-requests", getSkuRequests)
 	registerController("/get-sku-responses", getSkuResponses)
@@ -607,7 +656,16 @@ func main() {
 		log.Fatal(http.Serve(ln, nil))
 	}()
 	fmt.Println(ln.Addr().String())
-	webview.Open("Hello", "http://"+ln.Addr().String()+"/index.html", 800, 600, true)
+	// webview.Open("Hello", "http://"+ln.Addr().String()+"/index.html", 800, 600, true)
+	w := webview.New(webview.Settings{
+		URL:       "http://" + ln.Addr().String() + "/",
+		Title:     "hello",
+		Width:     800,
+		Height:    600,
+		Resizable: true,
+		Debug:     true,
+	})
+	w.Run()
 
 }
 

@@ -20,6 +20,12 @@
         />
       </a-form-item>
 
+      <a-form-item :label="`产品名称`">
+        <a-input v-decorator="[
+                `prodName`
+                ]" />
+      </a-form-item>
+
       <a-form-item>
         <a-button type="primary" @click="onSearch">Search</a-button>
       </a-form-item>
@@ -94,6 +100,7 @@ export default {
       searchValue: {
         shopNo: "",
         shopName: "",
+        prodName: "",
         date: ""
       },
       form: this.$form.createForm(this, { name: "advanced_search" }),
@@ -140,6 +147,7 @@ export default {
       this.loading = true;
       this.searchValue.shopName = this.form.getFieldsValue().shopName;
       this.searchValue.shopNo = this.form.getFieldsValue().shopNo;
+      this.searchValue.prodName = this.form.getFieldsValue().prodName;
       //默认当天日期
       if (this.searchValue.date == "") {
         this.searchValue.date = this.dateCurrent;
@@ -157,12 +165,14 @@ export default {
     getList(callback) {
       var shopNo = this.searchValue.shopNo;
       var shopName = this.searchValue.shopName;
+      var prodName = this.searchValue.prodName;
       var date = this.searchValue.date;
       this.$ajax
-        .get("http://localhost:39493/get-sku-responses", {
+        .get("/get-sku-responses", {
           params: {
             shop_name: shopName,
             shop_no: shopNo,
+            prod_name: prodName,
             date_response: date
           }
         })

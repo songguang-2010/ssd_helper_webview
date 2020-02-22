@@ -206,7 +206,7 @@ export default {
       var phone = this.searchValue.phone;
       var date = this.searchValue.date;
       this.$ajax
-        .get("http://localhost:39493/get-aos-orders", {
+        .get("/get-aos-orders", {
           params: {
             order_no: orderNo,
             shop_name: shopName,

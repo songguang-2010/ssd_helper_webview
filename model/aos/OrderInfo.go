@@ -101,7 +101,7 @@ func (oi *OrderInfo) GetList(shopName string, phone string, orderNo string) (*sq
 		whereArr = append(whereArr, fmt.Sprintf("shop_name like '%s%s%s'", "%", shopName, "%"))
 	}
 	if orderNo != "" {
-		whereArr = append(whereArr, fmt.Sprintf("orderNo='%s'", orderNo))
+		whereArr = append(whereArr, fmt.Sprintf("order_no='%s'", orderNo))
 	}
 	if phone != "" {
 		whereArr = append(whereArr, fmt.Sprintf("customer_phone='%s'", phone))

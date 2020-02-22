@@ -80,7 +80,7 @@ func (oi *PurchaseInfo) ShopNoUnfilled(shopNo string) string {
 }
 
 //GetRequestList ...
-func (oi *PurchaseInfo) GetRequestList(shopNoArr []string, dateResponse string) (*sql.Rows, error) {
+func (oi *PurchaseInfo) GetRequestList(shopNoArr []string, dateResponse string, prodName string) (*sql.Rows, error) {
 	//构造条件语句
 	var whereArr []string
 
@@ -104,6 +104,10 @@ func (oi *PurchaseInfo) GetRequestList(shopNoArr []string, dateResponse string) 
 
 	if dateResponse != "" {
 		whereArr = append(whereArr, fmt.Sprintf("date_response='%s'", strings.TrimSpace(dateResponse)))
+	}
+
+	if prodName != "" {
+		whereArr = append(whereArr, fmt.Sprintf("prod_name like '%s%s%s'", "%", strings.TrimSpace(prodName), "%"))
 	}
 
 	if len(whereArr) > 0 {
@@ -134,7 +138,7 @@ func (oi *PurchaseInfo) GetRequestList(shopNoArr []string, dateResponse string) 
 }
 
 //GetResponseList ...
-func (oi *PurchaseInfo) GetResponseList(shopNoArr []string, dateResponse string) (*sql.Rows, error) {
+func (oi *PurchaseInfo) GetResponseList(shopNoArr []string, dateResponse string, prodName string) (*sql.Rows, error) {
 	//构造条件语句
 	var whereArr []string
 
@@ -160,6 +164,10 @@ func (oi *PurchaseInfo) GetResponseList(shopNoArr []string, dateResponse string)
 
 	if dateResponse != "" {
 		whereArr = append(whereArr, fmt.Sprintf("date_response='%s'", strings.TrimSpace(dateResponse)))
+	}
+
+	if prodName != "" {
+		whereArr = append(whereArr, fmt.Sprintf("prod_name like '%s%s%s'", "%", strings.TrimSpace(prodName), "%"))
 	}
 
 	if len(whereArr) > 0 {

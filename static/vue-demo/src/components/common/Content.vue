@@ -11,11 +11,11 @@ export default {
   //         collapsed: false,
   //     };
   // },
-  name: 'Content',
+  name: "Content",
   props: {
     content: String
   }
-}
+};
 </script>
 
 <style>
