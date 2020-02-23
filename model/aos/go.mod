@@ -1,4 +1,4 @@
-module sku
+module aos
 
 go 1.12
 

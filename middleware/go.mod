@@ -1,4 +1,4 @@
-module tps
+module middleware
 
 go 1.12
 
@@ -11,8 +11,8 @@ require (
 	lib/stime v0.0.0
 )
 
-replace lib/serror v0.0.0 => ../../lib/serror
+replace lib/serror v0.0.0 => ../lib/serror
 
-replace lib/model v0.0.0 => ../../lib/model
+replace lib/model v0.0.0 => ../lib/model
 
-replace lib/stime v0.0.0 => ../../lib/stime
+replace lib/stime v0.0.0 => ../lib/stime

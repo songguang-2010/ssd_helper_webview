@@ -1,4 +1,4 @@
-module sku
+module stat
 
 go 1.12
 

@@ -29,6 +29,7 @@ echo $compileType
 # cd ${GOPATH}/src/ssd_helper_webview/
 
 #启用go的module编译模式
+# /usr/local/go/bin/go env -w GO111MODULE=on
 export GO111MODULE=on
 #go代理
 export GOPROXY=https://goproxy.io
