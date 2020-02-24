@@ -24,7 +24,7 @@ import (
 type WebController struct {
 }
 
-func getSkuResponses(w http.ResponseWriter, r *http.Request) {
+func (c *WebController) GetSkuResponses(w http.ResponseWriter, r *http.Request) {
 	shopNo := string(r.Form.Get("shop_no"))
 	shopName := string(r.Form.Get("shop_name"))
 	prodName := string(r.Form.Get("prod_name"))
@@ -114,7 +114,7 @@ func getSkuResponses(w http.ResponseWriter, r *http.Request) {
 	response.ResponseSuccess(w, pubArr)
 }
 
-func getSkuRequests(w http.ResponseWriter, r *http.Request) {
+func (c *WebController) GetSkuRequests(w http.ResponseWriter, r *http.Request) {
 	shopNo := string(r.Form.Get("shop_no"))
 	shopName := string(r.Form.Get("shop_name"))
 	prodName := string(r.Form.Get("prod_name"))
@@ -230,7 +230,7 @@ func getSkuRequests(w http.ResponseWriter, r *http.Request) {
 	response.ResponseSuccess(w, pubArr)
 }
 
-func getMiscDevices(w http.ResponseWriter, r *http.Request) {
+func (c *WebController) GetMiscDevices(w http.ResponseWriter, r *http.Request) {
 	shopNo := string(r.Form.Get("shop_no"))
 	shopName := string(r.Form.Get("shop_name"))
 	searchNoArr := make([]string, 0)
@@ -372,7 +372,7 @@ func getMiscDevices(w http.ResponseWriter, r *http.Request) {
 	response.ResponseSuccess(w, resArr)
 }
 
-func getTpsOrders(w http.ResponseWriter, r *http.Request) {
+func (c *WebController) GetTpsOrders(w http.ResponseWriter, r *http.Request) {
 	orderNo := string(r.Form.Get("order_no"))
 
 	//实例化数据模型
@@ -408,7 +408,7 @@ func getTpsOrders(w http.ResponseWriter, r *http.Request) {
 	response.ResponseSuccess(w, pubArr)
 }
 
-func getAosOrders(w http.ResponseWriter, r *http.Request) {
+func (c *WebController) GetAosOrders(w http.ResponseWriter, r *http.Request) {
 	phone := string(r.Form.Get("phone"))
 	dateCurrent := string(r.Form.Get("date"))
 	shopName := string(r.Form.Get("shop_name"))
@@ -445,7 +445,7 @@ func getAosOrders(w http.ResponseWriter, r *http.Request) {
 	response.ResponseSuccess(w, pubArr)
 }
 
-func getSsdOrders(w http.ResponseWriter, r *http.Request) {
+func (c *WebController) GetSsdOrders(w http.ResponseWriter, r *http.Request) {
 	phone := string(r.Form.Get("phone"))
 	dateCurrent := string(r.Form.Get("date"))
 	shopName := string(r.Form.Get("shop_name"))
@@ -482,7 +482,7 @@ func getSsdOrders(w http.ResponseWriter, r *http.Request) {
 	response.ResponseSuccess(w, pubArr)
 }
 
-func getSkuSpecs(w http.ResponseWriter, r *http.Request) {
+func (c *WebController) GetSkuSpecs(w http.ResponseWriter, r *http.Request) {
 	shopName := string(r.Form.Get("shop_name"))
 	shopCode := string(r.Form.Get("shop_code"))
 	prodName := string(r.Form.Get("prod_name"))

@@ -4,6 +4,7 @@ go 1.12
 
 // github.com/karalabe/xgo v0.0.0-20191115072854-c5ccff8648a7 // indirect
 require (
+	controller v0.0.0
 	github.com/spf13/viper v1.6.1 // indirect
 	github.com/zserge/webview v0.0.0-20191103184548-1a9ebffc2601 // indirect
 	golang.org/x/tools/gopls v0.3.2 // indirect
@@ -11,17 +12,17 @@ require (
 	lib/config v0.0.0
 	lib/file v0.0.0
 	lib/logwrap v0.0.0
-	lib/serror v0.0.0
 	lib/response v0.0.0
 	lib/route v0.0.0
+	lib/serror v0.0.0
 	middleware v0.0.0
-	controller v0.0.0
 	model/aos v0.0.0
 	model/misc v0.0.0
 	model/order v0.0.0
 	model/sku v0.0.0
 	model/stat v0.0.0
 	model/tps v0.0.0
+	register v0.0.0
 	src.techknowlogick.com/xgo v0.0.0-20191206145604-980bc3ce3f09 // indirect
 )
 
@@ -50,6 +51,8 @@ replace (
 	google.golang.org/genproto => github.com/googleapis/go-genproto v0.0.0-20191203220235-3fa9dbf08042
 	google.golang.org/grpc => github.com/grpc/grpc-go v1.25.1
 )
+
+replace register v0.0.0 => ./register
 
 replace controller v0.0.0 => ./controller
 

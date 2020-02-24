@@ -1,22 +1,32 @@
 package route
 
-type route struct {
-	path       string   // 路径
-	target     string   // 对应的控制器路径 Controller@index 这样的方法
-	method     string   // 访问类型 是get post 或者其他
-	alias      string   // 路由的别名
-	middleware []string // 中间件名称
-	controller string   // 控制器名称
-	function   string   // 挂载到控制器上的方法名称
-}
+import (
+	"fmt"
+	"lib/file"
+	// "path/filepath"
+	// "lib/log"
+	"net/http"
+	// "os"
+	"reflect"
+)
 
-type route_group struct {
-	root_path   string   // 路径
-	root_target string   // 对应的控制器路径 Controller@index 这样的方法
-	alias       string   // 路由的别名
-	middleware  []string // 中间件名称
-	routes      []route  // 包含的路由
-}
+// type route struct {
+// 	path       string   // 路径
+// 	target     string   // 对应的控制器路径 Controller@index 这样的方法
+// 	method     string   // 访问类型 是get post 或者其他
+// 	alias      string   // 路由的别名
+// 	middleware []string // 中间件名称
+// 	controller string   // 控制器名称
+// 	function   string   // 挂载到控制器上的方法名称
+// }
+
+// type route_group struct {
+// 	root_path   string   // 路径
+// 	root_target string   // 对应的控制器路径 Controller@index 这样的方法
+// 	alias       string   // 路由的别名
+// 	middleware  []string // 中间件名称
+// 	routes      []route  // 包含的路由
+// }
 
 type RouteItem struct {
 	Path       string   // 路径
@@ -24,6 +34,12 @@ type RouteItem struct {
 	Middleware []string // 中间件名称
 	Controller string   // 控制器名称
 	Function   string   // 挂载到控制器上的方法名称
+}
+
+//服务监听控制器结构
+type MyMux struct {
+	// 静态文件目录
+	publicPath string
 }
 
 // 单个的路由集合
@@ -39,11 +55,114 @@ var RoutesList []RouteItem
 
 // var R interface{}
 
+// 这里记录所有的应该注册的结构体
+
+// 控制器map
+var ControllerMap map[string]interface{}
+
+// 中间件map
+var MiddlewareMap map[string]interface{}
+
+// init ...
+func init() {
+	ControllerMap = make(map[string]interface{})
+	MiddlewareMap = make(map[string]interface{})
+}
+
+// 设置静态目录
+func (p *MyMux) SetPublicPath(publicPath string) {
+	p.publicPath = string(publicPath)
+}
+
+// 获取静态目录
+func (p *MyMux) GetPublicPath() string {
+	return p.publicPath
+}
+
+//服务监听控制器方法
+func (p *MyMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("current path : ", r.URL.Path)
+	fmt.Println("current method : ", r.Method)
+	//返回数据格式是json
+	r.ParseForm()
+	// fmt.Println("收到客户端请求: ", r.Form)
+	// fmt.Println("收到客户端请求: ", r.Form.Get("title"))
+	// 这个变量用来标记是否找到了动态路由
+	flag := false
+	// 每一个http请求都会走到这里，然后在这里，根据请求的URL，为其分配所需要调用的方法
+	params := []reflect.Value{reflect.ValueOf(w), reflect.ValueOf(r)}
+	for _, v := range RoutesList {
+		// 检测路由，根据路由指向需要的数据
+		if r.URL.Path == v.Path && r.Method == v.Method {
+			// 寻找到了对应路由，无需使用静态服务器
+			flag = true
+
+			// 检测该路由中是否存在中间件，如果存在，顺序调用
+			for _, m := range v.Middleware {
+				// 判断是否注册了这个中间件
+				if mid, ok := MiddlewareMap[m]; ok {
+					rmid := reflect.ValueOf(mid)
+					// 执行中间件，返回values数组
+					params = rmid.MethodByName("Handle").Call(params)
+					// 判断中间件执行结果，是否还要继续往下走
+					str := rmid.Elem().FieldByName("ResString").String()
+					if str != "" {
+						status := rmid.Elem().FieldByName("Status").Int()
+						// 字符串不空，查看状态码，默认返回500错误
+						if status == 0 {
+							status = 500
+						}
+						w.WriteHeader(int(status))
+						fmt.Fprint(w, str)
+
+						return
+					}
+				}
+			}
+
+			// 检测成功，开始调用方法
+			// 获取一个控制器包下的结构体
+			// 存在  c为结构体，调用c上挂载的方法
+			if d, ok := ControllerMap[v.Controller]; ok {
+				reflect.ValueOf(d).MethodByName(v.Function).Call(params)
+			}
+
+			// 停止向后执行
+			return
+		}
+	}
+
+	// 如果路由列表中还是没有的话,去静态服务器中寻找
+	if !flag {
+		// 去静态目录中寻找
+		publicPath := p.GetPublicPath() + r.URL.Path
+		ok, _ := file.PathExists(publicPath)
+		if ok {
+			http.ServeFile(w, r, publicPath)
+		} else {
+			http.NotFound(w, r)
+		}
+
+	}
+
+	return
+}
+
 //AddRoute 添加单个路由
 func AddRoute(route RouteItem) {
 	// 把这个新的路由，放到单个路由切片中，也要放到路由列表中
 	Routes = append(Routes, route)
 	RoutesList = append(RoutesList, route)
+}
+
+//AddMiddleWare 添加单个中间件
+func AddMiddleware(midName string, midObj interface{}) {
+	MiddlewareMap[midName] = midObj
+}
+
+//AddController 添加单个控制器
+func AddController(controllerName string, controllerObj interface{}) {
+	ControllerMap[controllerName] = controllerObj
 }
 
 // func init() {

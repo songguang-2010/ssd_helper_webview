@@ -78,3 +78,11 @@ func CurrentExecPath() (string, error) {
 	//将\替换成/
 	return strings.Replace(dir, "\\", "/", -1), nil
 }
+
+// // CurrentExecPath ...
+// func CurrentExecPath() (string, error) {
+// 	execPath, _ := os.Executable()
+// 	path, _ := filepath.EvalSymlinks(execPath)
+// 	exDir := filepath.Dir(path)
+// 	return exDir, nil
+// }

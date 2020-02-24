@@ -40,16 +40,16 @@ export default {
       let _this = this;
       // this.searchValue.canary = this.form.getFieldsValue().canary;
       this.loginAction((err, data) => {
-        console.log(data);
         if (err) {
           _this.error = err.toString();
           alert(_this.error);
         } else {
+          console.log("response data from go server: " + data);
           _this.userToken = "Bearer " + data.token;
-          console.log(_this.userToken);
+          console.log("current token to set: " + _this.userToken);
           // 将用户token保存到vuex中
           _this.setToken({ token: _this.userToken });
-          console.log("success");
+          console.log("success to set token from web page");
           _this.$router.push("/home");
           console.log("success");
           alert("登陆成功");
@@ -66,6 +66,7 @@ export default {
           }
         })
         .then(function(res) {
+          console.log("response from go server: " + res);
           callback(false, res.data);
         })
         .catch(function(error) {
