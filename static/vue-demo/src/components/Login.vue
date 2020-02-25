@@ -60,10 +60,8 @@ export default {
       let _this = this;
       this.$ajax
         .post("/login", {
-          params: {
-            username: _this.loginForm.username,
-            password: _this.loginForm.password
-          }
+          username: _this.loginForm.username,
+          password: _this.loginForm.password
         })
         .then(function(res) {
           console.log("response from go server: " + res);

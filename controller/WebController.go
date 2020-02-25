@@ -1,7 +1,7 @@
 package controller
 
 import (
-	// "encoding/json"
+	"encoding/json"
 	"fmt"
 	// "lib/config"
 	// "lib/file"
@@ -15,13 +15,117 @@ import (
 	ssd_stat "model/stat"
 	ssd_tps "model/tps"
 	// "net"
+	"io/ioutil"
 	"net/http"
+	"net/url"
 	// "os"
 	// "path/filepath"
 	// "runtime"
 )
 
+// func httpDo() {
+// 	client := &http.Client{}
+
+// 	req, err := http.NewRequest("POST", "http://www.01happy.com/demo/accept.php", strings.NewReader("name=cjb"))
+// 	if err != nil {
+// 		// handle error
+// 	}
+
+// 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+// 	req.Header.Set("Cookie", "name=anny")
+
+// 	resp, err := client.Do(req)
+
+// 	defer resp.Body.Close()
+
+// 	body, err := ioutil.ReadAll(resp.Body)
+// 	if err != nil {
+// 		// handle error
+// 	}
+
+// 	fmt.Println(string(body))
+// }
+
+type resStruct struct {
+	Body string
+	Code int
+}
+
+func httpPostForm(addr string, vals map[string][]string) (resStruct, error) {
+	values := url.Values{}
+	for k, v := range vals {
+		fmt.Println("key and value to post to remote: ", k, v)
+		values[k] = v
+	}
+	// values := url.Values{"key": {"Value"}, "id": {"123"}}
+	resp, err := http.PostForm(addr, values)
+	if err != nil {
+		// handle error
+		return resStruct{}, err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		// handle error
+		return resStruct{}, err
+	}
+
+	fmt.Println(string(body))
+
+	bodyStr := string(body)
+
+	res := resStruct{
+		Body: bodyStr,
+		Code: resp.StatusCode,
+	}
+
+	return res, nil
+}
+
 type WebController struct {
+}
+
+func (c *WebController) Login(w http.ResponseWriter, r *http.Request) {
+	type resRecord struct {
+		StatusCode int
+		Msg        string
+		Token      string `json:"token"`
+	}
+	rBody, _ := ioutil.ReadAll(r.Body) //把  body 内容读入字符串 rBody
+	fmt.Println("body string from request: ", string(rBody))
+	type loginRead struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+	rBodyJson := loginRead{}
+	err := json.Unmarshal(rBody, &rBodyJson)
+	if err != nil {
+		fmt.Println("error occurred when decode json, msg: ", err.Error())
+		response.ResponseSuccess(w, &resRecord{
+			StatusCode: 1,
+			Msg:        err.Error(),
+		})
+	}
+	username := string(rBodyJson.Username)
+	password := string(rBodyJson.Password)
+	fmt.Println("username from form:", username)
+	fmt.Println("password from form:", password)
+
+	vals := make(map[string][]string)
+	vals["username"] = []string{username}
+	vals["password"] = []string{password}
+
+	_, err = httpPostForm("http://application-adm-api/auth/login", vals)
+	if err != nil {
+		response.ResponseError(w, 500)
+	}
+
+	res := &resRecord{
+		Token: "ddddddddd",
+	}
+
+	response.ResponseSuccess(w, res)
 }
 
 func (c *WebController) GetSkuResponses(w http.ResponseWriter, r *http.Request) {
@@ -530,19 +634,4 @@ func (c *WebController) GetSkuSpecs(w http.ResponseWriter, r *http.Request) {
 	// return pubArr, nil
 	response.ResponseSuccess(w, pubArr)
 	// responseError(w, 401)
-}
-
-func (c *WebController) Login(w http.ResponseWriter, r *http.Request) {
-	// username := string(r.Form.Get("username"))
-	// password := string(r.Form.Get("password"))
-
-	type resRecord struct {
-		Token string `json:"token"`
-	}
-
-	res := &resRecord{
-		Token: "ddddddddd",
-	}
-
-	response.ResponseSuccess(w, res)
 }
