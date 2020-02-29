@@ -50,6 +50,10 @@
         >{{networkTypeMap[record.network_type]}}</span>
         <span slot="is_canary_str" slot-scope="text, record">{{isCanaryMap[record.is_canary]}}</span>
         <span slot="app_env_str" slot-scope="text, record">{{appEnvMap[record.app_env]}}</span>
+        <span
+          slot="update_time_str"
+          slot-scope="text, record"
+        >{{$moment(record.update_time*1000).format('YYYY-MM-DD HH:mm:ss')}}</span>
       </a-table>
     </div>
   </div>
@@ -115,39 +119,48 @@ export default {
           key: "app_version"
         },
         {
-          title: "灰度状态",
-          dataIndex: "app_env",
-          key: "app_env",
-          scopedSlots: { customRender: "app_env_str" },
-          filters: [
-            { text: "已灰度", value: "canary" },
-            { text: "未灰度", value: "prod" }
-          ],
-          filteredValue: filteredInfo.app_env || null,
-          onFilter: (value, record) => record.app_env.includes(value)
-        },
-        {
-          title: "灰度设备",
-          dataIndex: "is_canary",
-          key: "is_canary",
-          scopedSlots: { customRender: "is_canary_str" },
-          filters: [{ text: "是", value: "1" }, { text: "否", value: "0" }],
-          filteredValue: filteredInfo.is_canary || null,
-          onFilter: (value, record) => record.is_canary.includes(value)
-        },
-        {
-          title: "网络类型",
-          dataIndex: "network_type",
-          key: "network_type",
-          scopedSlots: { customRender: "network_type_str" },
-          filters: [
-            { text: "WIFI", value: "2" },
-            { text: "网线", value: "1" },
-            { text: "移动网络", value: "3" }
-          ],
-          filteredValue: filteredInfo.network_type || null,
-          onFilter: (value, record) => record.network_type.includes(value)
+          title: "更新时间",
+          dataIndex: "update_time",
+          key: "update_time",
+          scopedSlots: { customRender: "update_time_str" }
         }
+        // {
+        //   title: "灰度状态",
+        //   dataIndex: "app_env",
+        //   key: "app_env",
+        //   scopedSlots: { customRender: "app_env_str" },
+        //   filters: [
+        //     { text: "已灰度", value: "canary" },
+        //     { text: "未灰度", value: "prod" }
+        //   ],
+        //   filteredValue: filteredInfo.app_env || null,
+        //   onFilter: (value, record) => record.app_env.includes(value)
+        // },
+        // {
+        //   title: "灰度设备",
+        //   dataIndex: "is_canary",
+        //   key: "is_canary",
+        //   scopedSlots: { customRender: "is_canary_str" },
+        //   filters: [
+        //     { text: "是", value: "1" },
+        //     { text: "否", value: "0" }
+        //   ],
+        //   filteredValue: filteredInfo.is_canary || null,
+        //   onFilter: (value, record) => record.is_canary.includes(value)
+        // },
+        // {
+        //   title: "网络类型",
+        //   dataIndex: "network_type",
+        //   key: "network_type",
+        //   scopedSlots: { customRender: "network_type_str" },
+        //   filters: [
+        //     { text: "WIFI", value: "2" },
+        //     { text: "网线", value: "1" },
+        //     { text: "移动网络", value: "3" }
+        //   ],
+        //   filteredValue: filteredInfo.network_type || null,
+        //   onFilter: (value, record) => record.network_type.includes(value)
+        // }
       ];
       return columns;
     }

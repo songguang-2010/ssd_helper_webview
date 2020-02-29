@@ -462,12 +462,12 @@ func (c *WebController) GetMiscDevices(w http.ResponseWriter, r *http.Request) {
 				ID:          value.ID,
 				ShopNo:      value.ShopNo,
 				ShopName:    shopMap[value.ShopNo],
+				UpdateTime:  value.UpdateTime,
 				AppVersion:  value.AppVersion,
 				SerialNo:    value.SerialNo,
 				NetworkType: value.NetworkType,
 				AppEnv:      value.AppEnv,
 				IsCanary:    isCanary,
-				UpdateTime:  value.UpdateTime,
 				CreateTime:  value.CreateTime,
 			})
 		}
