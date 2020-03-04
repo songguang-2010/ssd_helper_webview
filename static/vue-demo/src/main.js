@@ -22,6 +22,7 @@ import Row from 'ant-design-vue/lib/row'
 import DatePicker from 'ant-design-vue/lib/date-picker'
 import Select from 'ant-design-vue/lib/select'
 import Tag from 'ant-design-vue/lib/tag'
+import Popconfirm from 'ant-design-vue/lib/popconfirm'
 import 'ant-design-vue/dist/antd.css'
 
 Vue.use(Button)
@@ -37,6 +38,7 @@ Vue.use(Row)
 Vue.use(DatePicker)
 Vue.use(Select)
 Vue.use(Tag)
+Vue.use(Popconfirm)
 
 // axios 配置
 axios.defaults.timeout = 5000

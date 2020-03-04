@@ -45,7 +45,7 @@ export default {
           alert(_this.error);
         } else {
           console.log("response data from go server: " + data);
-          _this.userToken = "Bearer " + data.token;
+          _this.userToken = data.token;
           console.log("current token to set: " + _this.userToken);
           // 将用户token保存到vuex中
           _this.setToken({ token: _this.userToken });

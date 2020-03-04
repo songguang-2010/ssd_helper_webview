@@ -3,6 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	// "reflect"
 	// "lib/config"
 	// "lib/file"
 	// "lib/log"
@@ -22,6 +23,9 @@ import (
 	// "path/filepath"
 	// "runtime"
 )
+
+var uid int
+var token string
 
 // func httpDo() {
 // 	client := &http.Client{}
@@ -46,12 +50,15 @@ import (
 // 	fmt.Println(string(body))
 // }
 
-type resStruct struct {
-	Body string
-	Code int
-}
+// type resStruct struct {
+// 	Body string
+// 	Code int
+// }
 
-func httpPostForm(addr string, vals map[string][]string) (resStruct, error) {
+func httpPostForm(addr string, vals map[string][]string) (interface{}, error) {
+	// 返回值结构
+	var resStruct interface{}
+
 	values := url.Values{}
 	for k, v := range vals {
 		fmt.Println("key and value to post to remote: ", k, v)
@@ -61,51 +68,66 @@ func httpPostForm(addr string, vals map[string][]string) (resStruct, error) {
 	resp, err := http.PostForm(addr, values)
 	if err != nil {
 		// handle error
-		return resStruct{}, err
+		fmt.Println(err.Error())
+		return resStruct, err
+	}
+	if resp.StatusCode != 200 {
+		// handle error
+		errMsg := fmt.Sprintf("error occurred, error code: %d, error msg: %s", resp.StatusCode, resp.Body)
+		return resStruct, serror.New(errMsg)
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		// handle error
-		return resStruct{}, err
+		return resStruct, err
 	}
 
 	fmt.Println(string(body))
 
-	bodyStr := string(body)
-
-	res := resStruct{
-		Body: bodyStr,
-		Code: resp.StatusCode,
+	// 远端响应值结构
+	type receiverStruct struct {
+		Code int         `json:"code"`
+		Msg  string      `json:"msg"`
+		Data interface{} `json:"data"`
 	}
 
-	return res, nil
+	rBodyJson := receiverStruct{}
+	err = json.Unmarshal(body, &rBodyJson)
+	if err != nil {
+		fmt.Println("error occurred when decode json, msg: ", err.Error())
+		// handle error
+		return resStruct, err
+	}
+
+	code := int(rBodyJson.Code)
+	if code != 100 {
+		return resStruct, serror.New(rBodyJson.Msg)
+	}
+
+	return rBodyJson.Data, nil
 }
 
 type WebController struct {
 }
 
 func (c *WebController) Login(w http.ResponseWriter, r *http.Request) {
-	type resRecord struct {
-		StatusCode int
-		Msg        string
-		Token      string `json:"token"`
-	}
-	rBody, _ := ioutil.ReadAll(r.Body) //把  body 内容读入字符串 rBody
-	fmt.Println("body string from request: ", string(rBody))
+
+	// 接收客户端请求值结构
 	type loginRead struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
 	}
+
+	// 读取客户端请求值
+	rBody, _ := ioutil.ReadAll(r.Body)
+	// fmt.Println("body string from request: ", string(rBody))
 	rBodyJson := loginRead{}
 	err := json.Unmarshal(rBody, &rBodyJson)
 	if err != nil {
 		fmt.Println("error occurred when decode json, msg: ", err.Error())
-		response.ResponseSuccess(w, &resRecord{
-			StatusCode: 1,
-			Msg:        err.Error(),
-		})
+		response.ResponseSuccess(w, 500)
 	}
 	username := string(rBodyJson.Username)
 	password := string(rBodyJson.Password)
@@ -116,16 +138,37 @@ func (c *WebController) Login(w http.ResponseWriter, r *http.Request) {
 	vals["username"] = []string{username}
 	vals["password"] = []string{password}
 
-	_, err = httpPostForm("http://application-adm-api/auth/login", vals)
+	resRemote, err := httpPostForm("http://application-adm-api/auth/login", vals)
 	if err != nil {
 		response.ResponseError(w, 500)
 	}
 
-	res := &resRecord{
-		Token: "ddddddddd",
-	}
+	fmt.Printf("response from remote: %v", resRemote)
 
-	response.ResponseSuccess(w, res)
+	// type resStruct
+	resMap := resRemote.(map[string]interface{})
+
+	uid = (int)((resMap["uid"]).(float64))
+	token = resMap["token"].(string)
+
+	fmt.Printf("response uid from remote: %d", uid)
+	fmt.Printf("response token from remote: %s", token)
+
+	// //返回值结构
+	// type resRecord struct {
+	// 	StatusCode int
+	// 	Msg        string
+	// 	Token      string `json:"token"`
+	// }
+
+	// res := &resRecord{
+	// 	Token: "ddddddddd",
+	// }
+
+	resRecord := make(map[string]string)
+	resRecord["token"] = token
+
+	response.ResponseSuccess(w, resRecord)
 }
 
 func (c *WebController) GetSkuResponses(w http.ResponseWriter, r *http.Request) {

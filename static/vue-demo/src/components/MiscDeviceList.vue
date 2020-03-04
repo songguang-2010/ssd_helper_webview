@@ -54,6 +54,18 @@
           slot="update_time_str"
           slot-scope="text, record"
         >{{$moment(record.update_time*1000).format('YYYY-MM-DD HH:mm:ss')}}</span>
+        <span slot="action" slot-scope="text, record">
+          <span v-if="record.is_canary=='1'">
+          <a-popconfirm title="确实要将该设备从灰度中取消么?" @confirm="() => cancelCanary(record.id)">
+            <a>取消灰度</a>
+          </a-popconfirm>
+          </span>
+          <span v-else>
+          <a-popconfirm title="确实要将该设备设置为灰度设备么?" @confirm="() => setCanary(record.id)">
+            <a>设为灰度</a>
+          </a-popconfirm>
+          </span>
+        </span>
       </a-table>
     </div>
   </div>
@@ -123,44 +135,49 @@ export default {
           dataIndex: "update_time",
           key: "update_time",
           scopedSlots: { customRender: "update_time_str" }
+        },
+        {
+          title: "灰度状态",
+          dataIndex: "app_env",
+          key: "app_env",
+          scopedSlots: { customRender: "app_env_str" },
+          filters: [
+            { text: "已灰度", value: "canary" },
+            { text: "未灰度", value: "prod" }
+          ],
+          filteredValue: filteredInfo.app_env || null,
+          onFilter: (value, record) => record.app_env.includes(value)
+        },
+        {
+          title: "灰度设备",
+          dataIndex: "is_canary",
+          key: "is_canary",
+          scopedSlots: { customRender: "is_canary_str" },
+          filters: [
+            { text: "是", value: "1" },
+            { text: "否", value: "0" }
+          ],
+          filteredValue: filteredInfo.is_canary || null,
+          onFilter: (value, record) => record.is_canary.includes(value)
+        },
+        {
+          title: "网络类型",
+          dataIndex: "network_type",
+          key: "network_type",
+          scopedSlots: { customRender: "network_type_str" },
+          filters: [
+            { text: "WIFI", value: "2" },
+            { text: "网线", value: "1" },
+            { text: "移动网络", value: "3" }
+          ],
+          filteredValue: filteredInfo.network_type || null,
+          onFilter: (value, record) => record.network_type.includes(value)
+        },
+        {
+          title: '操作',
+          key: 'action',
+          scopedSlots: { customRender: 'action' },
         }
-        // {
-        //   title: "灰度状态",
-        //   dataIndex: "app_env",
-        //   key: "app_env",
-        //   scopedSlots: { customRender: "app_env_str" },
-        //   filters: [
-        //     { text: "已灰度", value: "canary" },
-        //     { text: "未灰度", value: "prod" }
-        //   ],
-        //   filteredValue: filteredInfo.app_env || null,
-        //   onFilter: (value, record) => record.app_env.includes(value)
-        // },
-        // {
-        //   title: "灰度设备",
-        //   dataIndex: "is_canary",
-        //   key: "is_canary",
-        //   scopedSlots: { customRender: "is_canary_str" },
-        //   filters: [
-        //     { text: "是", value: "1" },
-        //     { text: "否", value: "0" }
-        //   ],
-        //   filteredValue: filteredInfo.is_canary || null,
-        //   onFilter: (value, record) => record.is_canary.includes(value)
-        // },
-        // {
-        //   title: "网络类型",
-        //   dataIndex: "network_type",
-        //   key: "network_type",
-        //   scopedSlots: { customRender: "network_type_str" },
-        //   filters: [
-        //     { text: "WIFI", value: "2" },
-        //     { text: "网线", value: "1" },
-        //     { text: "移动网络", value: "3" }
-        //   ],
-        //   filteredValue: filteredInfo.network_type || null,
-        //   onFilter: (value, record) => record.network_type.includes(value)
-        // }
       ];
       return columns;
     }
@@ -175,6 +192,48 @@ export default {
     $route: "fetchData"
   },
   methods: {
+    cancelCanary(id) {
+      const newData = [...this.data];
+      const target = newData.filter(item => id === item.id)[0];
+      if(target){
+        target.is_canary = 0;
+        this.data = newData;
+      }
+      
+    },
+    setCanary(id) {
+      const newData = [...this.data];
+      const target = newData.filter(item => id === item.id)[0];
+      if(target){
+        let _this = this;
+        this.setCanaryAction(id, (err, data) => {
+          if (err) {
+            _this.error = err.toString();
+            alert(_this.error);
+          } else {
+            console.log("response data from go server: " + data);
+            target.is_canary = 1;
+            _this.data = newData;
+            alert("设置成功");
+          }
+        });
+      }
+      
+    },
+    setCanaryAction(device_id, callback) {
+      let _this = this;
+      this.$ajax
+        .post("/set-canary", {
+          device_id: device_id
+        })
+        .then(function(res) {
+          console.log("response from go server: " + res);
+          callback(false, res.data);
+        })
+        .catch(function(error) {
+          callback(error, false);
+        });
+    },
     clearFilters() {
       console.log(this.filteredInfo);
       this.filteredInfo = null;

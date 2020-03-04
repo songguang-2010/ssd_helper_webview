@@ -9,6 +9,12 @@ func InitRouter() {
 	//添加路由项
 	route.AddRoute(route.RouteItem{
 		Method:     "POST",
+		Path:       "/set-canary",
+		Controller: "WebController",
+		Function:   "SetCanary",
+	})
+	route.AddRoute(route.RouteItem{
+		Method:     "POST",
 		Path:       "/login",
 		Controller: "WebController",
 		Function:   "Login",

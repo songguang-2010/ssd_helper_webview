@@ -122,9 +122,9 @@ func (oi *Device) GetList(shopNoArr []string, appVersion string) (*sql.Rows, err
 	var rows *sql.Rows
 	var err error
 	if where != "" {
-		rows, err = oi.prepare().Select(fields).Where(where).Order("id asc").Limit(limit).Rows()
+		rows, err = oi.prepare().Select(fields).Where(where).Order("update_time desc").Limit(limit).Rows()
 	} else {
-		rows, err = oi.prepare().Select(fields).Order("id asc").Limit(limit).Rows()
+		rows, err = oi.prepare().Select(fields).Order("update_time desc").Limit(limit).Rows()
 	}
 
 	if err != nil {
