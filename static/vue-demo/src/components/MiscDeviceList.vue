@@ -196,11 +196,22 @@ export default {
       const newData = [...this.data];
       const target = newData.filter(item => id === item.id)[0];
       if(target){
-        target.is_canary = 0;
-        this.data = newData;
+        let _this = this;
+        this.cancelCanaryAction(id, (err, data) => {
+          if (err) {
+            _this.error = err.toString();
+            alert(_this.error);
+          } else {
+            console.log("response data from go server: " + data);
+            target.is_canary = 0;
+            _this.data = newData;
+            alert("取消成功");
+          }
+        });
       }
       
     },
+    //设置为灰度设备
     setCanary(id) {
       const newData = [...this.data];
       const target = newData.filter(item => id === item.id)[0];
@@ -224,6 +235,20 @@ export default {
       let _this = this;
       this.$ajax
         .post("/set-canary", {
+          device_id: device_id
+        })
+        .then(function(res) {
+          console.log("response from go server: " + res);
+          callback(false, res.data);
+        })
+        .catch(function(error) {
+          callback(error, false);
+        });
+    },
+    cancelCanaryAction(device_id, callback) {
+      let _this = this;
+      this.$ajax
+        .post("/cancel-canary", {
           device_id: device_id
         })
         .then(function(res) {

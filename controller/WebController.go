@@ -16,9 +16,14 @@ import (
 	ssd_stat "model/stat"
 	ssd_tps "model/tps"
 	// "net"
+	"crypto/md5"
+	"encoding/hex"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"net/url"
+	// "strings"
+	"time"
 	// "os"
 	// "path/filepath"
 	// "runtime"
@@ -26,6 +31,55 @@ import (
 
 var uid int
 var token string
+
+//生成随机字符串
+func GetRandomString(randomLen int) string {
+	str := "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	bytes := []byte(str)
+	result := []byte{}
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	for i := 0; i < randomLen; i++ {
+		result = append(result, bytes[r.Intn(len(bytes))])
+	}
+	return string(result)
+}
+
+// return len=8  salt
+func GetRandomSalt() string {
+	return GetRandomString(8)
+}
+
+// 生成32位MD5
+func MD5(text string) string {
+	ctx := md5.New()
+	ctx.Write([]byte(text))
+	return hex.EncodeToString(ctx.Sum(nil))
+}
+
+// 生成秘钥
+func createSecret(uid int) string {
+	nonceStrPool := "asdfghjkl0987oiuytrewq654zxcvbnm321"
+	step := 5
+	startStrOffset := uid % step
+	signStr := ""
+	for i := 0; i < 35; i += step {
+		strOffset := startStrOffset + i
+		userIdTmp := uid + i
+		signStr = fmt.Sprintf("%s%s%d", signStr, nonceStrPool[strOffset:strOffset+1], userIdTmp)
+	}
+	ctx := md5.New()
+	ctx.Write([]byte(signStr))
+	return hex.EncodeToString(ctx.Sum(nil))
+}
+
+func createSignature(token string, uid int, timestamp int64, nonce string, values url.Values) string {
+	secret := createSecret(uid)
+	postBody := values.Encode()
+	signStr := fmt.Sprintf("nonce=%s&timestamp=%d&token=%s&uid=%d&postBody=%s%s", nonce, timestamp, token, uid, postBody, secret)
+	ctx := md5.New()
+	ctx.Write([]byte(signStr))
+	return hex.EncodeToString(ctx.Sum(nil))
+}
 
 // func httpDo() {
 // 	client := &http.Client{}
@@ -61,11 +115,17 @@ func httpPostForm(addr string, vals map[string][]string) (interface{}, error) {
 
 	values := url.Values{}
 	for k, v := range vals {
-		fmt.Println("key and value to post to remote: ", k, v)
+		fmt.Println("key and value to post to remote: ", k, v[0])
 		values[k] = v
 	}
 	// values := url.Values{"key": {"Value"}, "id": {"123"}}
-	resp, err := http.PostForm(addr, values)
+
+	//通用验证参数
+	timestampNow := time.Now().Unix()
+	nonceStr := GetRandomSalt()
+	signature := createSignature(token, uid, timestampNow, nonceStr, values)
+	getParams := fmt.Sprintf("token=%s&uid=%d&timestamp=%d&nonce=%s&signature=%s", token, uid, timestampNow, nonceStr, signature)
+	resp, err := http.PostForm("http://application-adm-api"+addr+"?"+getParams, values)
 	if err != nil {
 		// handle error
 		fmt.Println(err.Error())
@@ -73,7 +133,7 @@ func httpPostForm(addr string, vals map[string][]string) (interface{}, error) {
 	}
 	if resp.StatusCode != 200 {
 		// handle error
-		errMsg := fmt.Sprintf("error occurred, error code: %d, error msg: %s", resp.StatusCode, resp.Body)
+		errMsg := fmt.Sprintf("error occurred, error code: %d, error msg: %s", resp.StatusCode, resp.Status)
 		return resStruct, serror.New(errMsg)
 	}
 	defer resp.Body.Close()
@@ -112,6 +172,80 @@ func httpPostForm(addr string, vals map[string][]string) (interface{}, error) {
 type WebController struct {
 }
 
+// CancelCanary 取消为灰度设备
+func (c *WebController) CancelCanary(w http.ResponseWriter, r *http.Request) {
+
+	// 接收客户端请求值结构
+	type paramsClient struct {
+		DeviceId int `json:"device_id"`
+	}
+
+	// 读取客户端请求值
+	rBody, _ := ioutil.ReadAll(r.Body)
+	rBodyJson := paramsClient{}
+	err := json.Unmarshal(rBody, &rBodyJson)
+	if err != nil {
+		fmt.Println("error occurred when decode json, msg: ", err.Error())
+		response.ResponseSuccess(w, 500)
+	}
+	device_id := fmt.Sprintf("%d", rBodyJson.DeviceId)
+
+	fmt.Println("device id from form: ", device_id)
+
+	vals := make(map[string][]string)
+	vals["deviceId"] = []string{device_id}
+
+	resRemote, err := httpPostForm("/device/cancel-canary", vals)
+	if err != nil {
+		fmt.Println("error occurred when response from remote, msg: ", err.Error())
+		response.ResponseError(w, 500)
+	}
+
+	fmt.Printf("response from remote: %v", resRemote)
+
+	resRecord := make(map[string]string)
+	resRecord["result"] = "ok"
+
+	response.ResponseSuccess(w, resRecord)
+}
+
+// SetCanary 设置为灰度设备
+func (c *WebController) SetCanary(w http.ResponseWriter, r *http.Request) {
+
+	// 接收客户端请求值结构
+	type paramsClient struct {
+		DeviceId int `json:"device_id"`
+	}
+
+	// 读取客户端请求值
+	rBody, _ := ioutil.ReadAll(r.Body)
+	rBodyJson := paramsClient{}
+	err := json.Unmarshal(rBody, &rBodyJson)
+	if err != nil {
+		fmt.Println("error occurred when decode json, msg: ", err.Error())
+		response.ResponseSuccess(w, 500)
+	}
+	device_id := fmt.Sprintf("%d", rBodyJson.DeviceId)
+
+	fmt.Println("device id from form: ", device_id)
+
+	vals := make(map[string][]string)
+	vals["deviceId"] = []string{device_id}
+
+	resRemote, err := httpPostForm("/device/set-canary", vals)
+	if err != nil {
+		fmt.Println("error occurred when response from remote, msg: ", err.Error())
+		response.ResponseError(w, 500)
+	}
+
+	fmt.Printf("response from remote: %v", resRemote)
+
+	resRecord := make(map[string]string)
+	resRecord["result"] = "ok"
+
+	response.ResponseSuccess(w, resRecord)
+}
+
 func (c *WebController) Login(w http.ResponseWriter, r *http.Request) {
 
 	// 接收客户端请求值结构
@@ -138,7 +272,7 @@ func (c *WebController) Login(w http.ResponseWriter, r *http.Request) {
 	vals["username"] = []string{username}
 	vals["password"] = []string{password}
 
-	resRemote, err := httpPostForm("http://application-adm-api/auth/login", vals)
+	resRemote, err := httpPostForm("/auth/login", vals)
 	if err != nil {
 		response.ResponseError(w, 500)
 	}
