@@ -172,6 +172,80 @@ func httpPostForm(addr string, vals map[string][]string) (interface{}, error) {
 type WebController struct {
 }
 
+// SetCanaryBatch 批量设置为灰度设备
+func (c *WebController) SetCanaryBatch(w http.ResponseWriter, r *http.Request) {
+
+	// 接收客户端请求值结构
+	type paramsClient struct {
+		DeviceIds string `json:"device_ids"`
+	}
+
+	// 读取客户端请求值
+	rBody, _ := ioutil.ReadAll(r.Body)
+	rBodyJson := paramsClient{}
+	err := json.Unmarshal(rBody, &rBodyJson)
+	if err != nil {
+		fmt.Println("error occurred when decode json, msg: ", err.Error())
+		response.ResponseSuccess(w, 500)
+	}
+	device_ids := fmt.Sprintf("%s", rBodyJson.DeviceIds)
+
+	fmt.Println("device ids from form: ", device_ids)
+
+	vals := make(map[string][]string)
+	vals["deviceIds"] = []string{device_ids}
+
+	resRemote, err := httpPostForm("/device/set-canary-batch", vals)
+	if err != nil {
+		fmt.Println("error occurred when response from remote, msg: ", err.Error())
+		response.ResponseError(w, 500)
+	}
+
+	fmt.Printf("response from remote: %v", resRemote)
+
+	resRecord := make(map[string]string)
+	resRecord["result"] = "ok"
+
+	response.ResponseSuccess(w, resRecord)
+}
+
+// CancelCanaryBatch 批量取消为灰度设备
+func (c *WebController) CancelCanaryBatch(w http.ResponseWriter, r *http.Request) {
+
+	// 接收客户端请求值结构
+	type paramsClient struct {
+		DeviceIds string `json:"device_ids"`
+	}
+
+	// 读取客户端请求值
+	rBody, _ := ioutil.ReadAll(r.Body)
+	rBodyJson := paramsClient{}
+	err := json.Unmarshal(rBody, &rBodyJson)
+	if err != nil {
+		fmt.Println("error occurred when decode json, msg: ", err.Error())
+		response.ResponseSuccess(w, 500)
+	}
+	device_ids := fmt.Sprintf("%s", rBodyJson.DeviceIds)
+
+	fmt.Println("device ids from form: ", device_ids)
+
+	vals := make(map[string][]string)
+	vals["deviceIds"] = []string{device_ids}
+
+	resRemote, err := httpPostForm("/device/cancel-canary-batch", vals)
+	if err != nil {
+		fmt.Println("error occurred when response from remote, msg: ", err.Error())
+		response.ResponseError(w, 500)
+	}
+
+	fmt.Printf("response from remote: %v", resRemote)
+
+	resRecord := make(map[string]string)
+	resRecord["result"] = "ok"
+
+	response.ResponseSuccess(w, resRecord)
+}
+
 // CancelCanary 取消为灰度设备
 func (c *WebController) CancelCanary(w http.ResponseWriter, r *http.Request) {
 

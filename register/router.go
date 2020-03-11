@@ -9,6 +9,24 @@ func InitRouter() {
 	//添加路由项
 	route.AddRoute(route.RouteItem{
 		Method:     "POST",
+		Path:       "/cancel-canary-batch",
+		Controller: "WebController",
+		Function:   "CancelCanaryBatch",
+	})
+	route.AddRoute(route.RouteItem{
+		Method:     "POST",
+		Path:       "/set-canary-batch",
+		Controller: "WebController",
+		Function:   "SetCanaryBatch",
+	})
+	route.AddRoute(route.RouteItem{
+		Method:     "POST",
+		Path:       "/cancel-canary",
+		Controller: "WebController",
+		Function:   "CancelCanary",
+	})
+	route.AddRoute(route.RouteItem{
+		Method:     "POST",
 		Path:       "/set-canary",
 		Controller: "WebController",
 		Function:   "SetCanary",

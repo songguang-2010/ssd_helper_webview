@@ -43,7 +43,21 @@
         </span>
       </span>
 
-      <a-table :columns="columns" :dataSource="data" @change="handleChange">
+      <div style="margin-bottom: 16px">
+        <a-button type="primary" @click="batchSetCanary" :loading="loading">
+          设为灰度设备
+        </a-button>
+        <a-button type="primary" @click="batchCancelCanary" :loading="loading">
+          取消灰度设备
+        </a-button>
+        <span style="margin-left: 8px">
+          <template v-if="hasSelected">
+            {{`选择了 ${selectedRowKeys.length} 个条目`}}
+          </template>
+        </span>
+      </div>
+
+      <a-table :columns="columns" :dataSource="data" @change="handleChange" :rowSelection="rowSelection">
         <span
           slot="network_type_str"
           slot-scope="text, record"
@@ -73,6 +87,23 @@
 
 <script>
 // const columns = [];
+// const rowSelection = {
+//     onChange: (selectedRowKeys, selectedRows) => {
+//       console.log(`selectedRowKeys: ${selectedRowKeys}`, 'selectedRows: ', selectedRows);
+//     },
+//     onSelect: (record, selected, selectedRows) => {
+//       console.log(record, selected, selectedRows);
+//       record.is_canary = 1
+      
+//       // const newData = [...this.data];
+//       // const target = newData.filter(item => record.id === item.id)[0];
+//       // target.is_canary = 0;
+//       // this.data = newData;
+//     },
+//     onSelectAll: (selected, selectedRows, changeRows) => {
+//       console.log(selected, selectedRows, changeRows);
+//     },
+//   };
 
 export default {
   name: "MiscDeviceList",
@@ -102,10 +133,29 @@ export default {
         prod: "未灰度",
         canary: "已灰度"
       },
-      filteredInfo: null
+      filteredInfo: null,
+      selectedRowKeys: [],
+      selectedRows: []
+      // rowSelection,
     };
   },
   computed: {
+    hasSelected() {
+      return this.selectedRowKeys.length > 0;
+    },
+    rowSelection(){
+      const { selectedRowKeys, selectedRows } = this;
+      return {
+        selectedRowKeys,
+        selectedRows,
+        // onChange: this.onSelectChange,
+        onChange: (selectedRowKeys, selectedRows) => {
+          console.log(`selectedRowKeys: ${selectedRowKeys}`, 'selectedRows: ', selectedRows);
+          this.selectedRowKeys = selectedRowKeys;
+          this.selectedRows = selectedRows;
+        }
+      }
+    },
     columns() {
       let { filteredInfo } = this;
       filteredInfo = filteredInfo || {};
@@ -192,6 +242,94 @@ export default {
     $route: "fetchData"
   },
   methods: {
+    batchSetCanary() {
+      if(this.selectedRowKeys.length==0){
+        alert("请至少选择一个条目")
+        return false;
+      }
+
+      this.loading = true;
+      let selectedIds = "";
+      for(var i=0; i<this.selectedRows.length; i++){
+        selectedIds += "," + this.selectedRows[i].id;
+      }
+      //去除前端空格及逗号
+      selectedIds = selectedIds.replace(/^(\s|,)+/g, '');
+      
+      let _this = this;
+      this.batchSetCanaryAction(selectedIds, (err, data) => {
+        _this.loading = false;
+        _this.selectedRowKeys = [];
+        if (err) {
+          _this.error = err.toString();
+          alert(_this.error);
+        } else {
+          console.log("response data from go server: " + data);
+          for(var i=0; i<_this.selectedRows.length; i++){
+            _this.selectedRows[i].is_canary = 1;
+          }
+          alert("设置成功");
+        }
+      });
+    },
+    batchCancelCanary() {
+      if(this.selectedRowKeys.length==0){
+        alert("请至少选择一个条目")
+        return false;
+      }
+
+      this.loading = true;
+      let selectedIds = "";
+      for(var i=0; i<this.selectedRows.length; i++){
+        selectedIds += "," + this.selectedRows[i].id;
+      }
+      //去除前端空格及逗号
+      selectedIds = selectedIds.replace(/^(\s|,)+/g, '');
+      
+      let _this = this;
+      this.batchCancelCanaryAction(selectedIds, (err, data) => {
+        _this.loading = false;
+        _this.selectedRowKeys = [];
+        if (err) {
+          _this.error = err.toString();
+          alert(_this.error);
+        } else {
+          console.log("response data from go server: " + data);
+          for(var i=0; i<_this.selectedRows.length; i++){
+            _this.selectedRows[i].is_canary = 0;
+          }
+          alert("取消成功");
+        }
+      });
+    },
+    batchSetCanaryAction(device_ids, callback) {
+      let _this = this;
+      this.$ajax
+        .post("/set-canary-batch", {
+          device_ids: device_ids
+        })
+        .then(function(res) {
+          console.log("response from go server: " + res);
+          callback(false, res.data);
+        })
+        .catch(function(error) {
+          callback(error, false);
+        });
+    },
+    batchCancelCanaryAction(device_ids, callback) {
+      let _this = this;
+      this.$ajax
+        .post("/cancel-canary-batch", {
+          device_ids: device_ids
+        })
+        .then(function(res) {
+          console.log("response from go server: " + res);
+          callback(false, res.data);
+        })
+        .catch(function(error) {
+          callback(error, false);
+        });
+    },
     cancelCanary(id) {
       const newData = [...this.data];
       const target = newData.filter(item => id === item.id)[0];
@@ -280,11 +418,12 @@ export default {
       // this.searchValue.canary = this.form.getFieldsValue().canary;
       this.getDeviceList((err, data) => {
         this.loading = false;
+        this.selectedRowKeys = [];
+        this.clearFilters();
         if (err) {
           this.error = err.toString();
         } else {
           this.data = data;
-          this.clearFilters();
         }
       });
     },
