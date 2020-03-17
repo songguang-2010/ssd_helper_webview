@@ -16,6 +16,16 @@
                 `app_version`
                 ]" />
       </a-form-item>
+      <a-form-item :label="`分公司编码`">
+        <a-input v-decorator="[
+                `company_sale_id`
+                ]" />
+      </a-form-item>
+      <a-form-item :label="`设备Model`">
+        <a-input v-decorator="[
+                `model`
+                ]" />
+      </a-form-item>
       <!-- <a-form-item label="灰度设备" :label-col="{ span: 5 }" :wrapper-col="{ span: 12 }">
         <a-select v-decorator="['canary', { initialValue: '0'}]" style="width: 270px;">
           <a-select-option value="0">不限</a-select-option>
@@ -44,20 +54,20 @@
       </span>
 
       <div style="margin-bottom: 16px">
-        <a-button type="primary" @click="batchSetCanary" :loading="loading">
-          设为灰度设备
-        </a-button>
-        <a-button type="primary" @click="batchCancelCanary" :loading="loading">
-          取消灰度设备
-        </a-button>
+        <a-button type="primary" @click="batchSetCanary" :loading="loading">设为灰度设备</a-button>
+        <a-button type="primary" @click="batchCancelCanary" :loading="loading">取消灰度设备</a-button>
         <span style="margin-left: 8px">
-          <template v-if="hasSelected">
-            {{`选择了 ${selectedRowKeys.length} 个条目`}}
-          </template>
+          <template v-if="hasSelected">{{`选择了 ${selectedRowKeys.length} 个条目`}}</template>
         </span>
       </div>
 
-      <a-table :columns="columns" :dataSource="data" @change="handleChange" :rowSelection="rowSelection">
+      <a-table
+        :columns="columns"
+        :dataSource="data"
+        :pagination="pagination"
+        @change="handleChange"
+        :rowSelection="rowSelection"
+      >
         <span
           slot="network_type_str"
           slot-scope="text, record"
@@ -70,17 +80,26 @@
         >{{$moment(record.update_time*1000).format('YYYY-MM-DD HH:mm:ss')}}</span>
         <span slot="action" slot-scope="text, record">
           <span v-if="record.is_canary=='1'">
-          <a-popconfirm title="确实要将该设备从灰度中取消么?" @confirm="() => cancelCanary(record.id)">
-            <a>取消灰度</a>
-          </a-popconfirm>
+            <a-popconfirm title="确实要将该设备从灰度中取消么?" @confirm="() => cancelCanary(record.id)">
+              <a>取消灰度</a>
+            </a-popconfirm>
           </span>
           <span v-else>
-          <a-popconfirm title="确实要将该设备设置为灰度设备么?" @confirm="() => setCanary(record.id)">
-            <a>设为灰度</a>
-          </a-popconfirm>
+            <a-popconfirm title="确实要将该设备设置为灰度设备么?" @confirm="() => setCanary(record.id)">
+              <a>设为灰度</a>
+            </a-popconfirm>
           </span>
         </span>
       </a-table>
+      <br />
+      <!-- <a-pagination
+        showSizeChanger
+        :pageSize.sync="pageSize"
+        :pageSizeOptions="pageSizeOptions"
+        @showSizeChange="onShowSizeChange"
+        :total="total"
+        v-model="current"
+      />-->
     </div>
   </div>
 </template>
@@ -94,7 +113,7 @@
 //     onSelect: (record, selected, selectedRows) => {
 //       console.log(record, selected, selectedRows);
 //       record.is_canary = 1
-      
+
 //       // const newData = [...this.data];
 //       // const target = newData.filter(item => record.id === item.id)[0];
 //       // target.is_canary = 0;
@@ -105,10 +124,117 @@
 //     },
 //   };
 
+const columns = function() {
+  let { filteredInfo } = this;
+  filteredInfo = filteredInfo || {};
+  const columns = [
+    {
+      title: "设备ID",
+      dataIndex: "id",
+      key: "id"
+    },
+    {
+      title: "门店编号",
+      dataIndex: "shop_no",
+      key: "shop_no"
+    },
+    {
+      title: "门店名称",
+      dataIndex: "shop_name",
+      key: "shop_name"
+    },
+    {
+      title: "分公司编码",
+      dataIndex: "company_sale_id",
+      key: "company_sale_id"
+    },
+    {
+      title: "App版本号",
+      dataIndex: "app_version",
+      key: "app_version"
+    },
+    {
+      title: "更新时间",
+      dataIndex: "update_time",
+      key: "update_time",
+      scopedSlots: { customRender: "update_time_str" }
+    },
+    {
+      title: "灰度状态",
+      dataIndex: "app_env",
+      key: "app_env",
+      scopedSlots: { customRender: "app_env_str" },
+      filters: [
+        { text: "已灰度", value: "canary" },
+        { text: "未灰度", value: "prod" }
+      ],
+      filteredValue: filteredInfo.app_env || null,
+      onFilter: (value, record) => record.app_env.includes(value)
+    },
+    {
+      title: "灰度设备",
+      dataIndex: "is_canary",
+      key: "is_canary",
+      scopedSlots: { customRender: "is_canary_str" },
+      filters: [
+        { text: "是", value: "1" },
+        { text: "否", value: "0" }
+      ],
+      filteredValue: filteredInfo.is_canary || null,
+      onFilter: (value, record) => record.is_canary.includes(value),
+      filterMultiple: false
+    },
+    {
+      title: "网络类型",
+      dataIndex: "network_type",
+      key: "network_type",
+      scopedSlots: { customRender: "network_type_str" },
+      filters: [
+        { text: "WIFI", value: "2" },
+        { text: "网线", value: "1" },
+        { text: "移动网络", value: "3" }
+      ],
+      filteredValue: filteredInfo.network_type || null,
+      onFilter: (value, record) => record.network_type.includes(value)
+    },
+    {
+      title: "操作",
+      key: "action",
+      scopedSlots: { customRender: "action" }
+    }
+  ];
+  return columns;
+};
+
+const columnsMaps = {
+  networkTypeMap: {
+    1: "网线",
+    2: "WIFI",
+    3: "移动网络"
+  },
+  isCanaryMap: {
+    0: "否",
+    1: "是"
+  },
+  appEnvMap: {
+    prod: "未灰度",
+    canary: "已灰度"
+  }
+};
+
+const pagination = {
+  pageSize: 20,
+  current: 1,
+  pageSizeOptions: ["10", "20", "50", "100", "200", "500"],
+  total: 0,
+  showSizeChanger: true
+};
+
 export default {
   name: "MiscDeviceList",
   data() {
     return {
+      pagination: pagination,
       loading: false,
       data: [],
       error: null,
@@ -116,23 +242,13 @@ export default {
       searchValue: {
         shop_no: "",
         shop_name: "",
-        app_version: ""
+        app_version: "",
+        company_sale_id: "",
+        model: ""
         // canary: 0
       },
       form: this.$form.createForm(this, { name: "advanced_search" }),
-      networkTypeMap: {
-        1: "网线",
-        2: "WIFI",
-        3: "移动网络"
-      },
-      isCanaryMap: {
-        0: "否",
-        1: "是"
-      },
-      appEnvMap: {
-        prod: "未灰度",
-        canary: "已灰度"
-      },
+      ...columnsMaps,
       filteredInfo: null,
       selectedRowKeys: [],
       selectedRows: []
@@ -143,94 +259,24 @@ export default {
     hasSelected() {
       return this.selectedRowKeys.length > 0;
     },
-    rowSelection(){
+    rowSelection() {
       const { selectedRowKeys, selectedRows } = this;
       return {
         selectedRowKeys,
         selectedRows,
         // onChange: this.onSelectChange,
         onChange: (selectedRowKeys, selectedRows) => {
-          console.log(`selectedRowKeys: ${selectedRowKeys}`, 'selectedRows: ', selectedRows);
+          console.log(
+            `selectedRowKeys: ${selectedRowKeys}`,
+            "selectedRows: ",
+            selectedRows
+          );
           this.selectedRowKeys = selectedRowKeys;
           this.selectedRows = selectedRows;
         }
-      }
+      };
     },
-    columns() {
-      let { filteredInfo } = this;
-      filteredInfo = filteredInfo || {};
-      const columns = [
-        {
-          title: "设备ID",
-          dataIndex: "id",
-          key: "id"
-        },
-        {
-          title: "门店编号",
-          dataIndex: "shop_no",
-          key: "shop_no"
-        },
-        {
-          title: "门店名称",
-          dataIndex: "shop_name",
-          key: "shop_name"
-        },
-        {
-          title: "App版本号",
-          dataIndex: "app_version",
-          key: "app_version"
-        },
-        {
-          title: "更新时间",
-          dataIndex: "update_time",
-          key: "update_time",
-          scopedSlots: { customRender: "update_time_str" }
-        },
-        {
-          title: "灰度状态",
-          dataIndex: "app_env",
-          key: "app_env",
-          scopedSlots: { customRender: "app_env_str" },
-          filters: [
-            { text: "已灰度", value: "canary" },
-            { text: "未灰度", value: "prod" }
-          ],
-          filteredValue: filteredInfo.app_env || null,
-          onFilter: (value, record) => record.app_env.includes(value)
-        },
-        {
-          title: "灰度设备",
-          dataIndex: "is_canary",
-          key: "is_canary",
-          scopedSlots: { customRender: "is_canary_str" },
-          filters: [
-            { text: "是", value: "1" },
-            { text: "否", value: "0" }
-          ],
-          filteredValue: filteredInfo.is_canary || null,
-          onFilter: (value, record) => record.is_canary.includes(value)
-        },
-        {
-          title: "网络类型",
-          dataIndex: "network_type",
-          key: "network_type",
-          scopedSlots: { customRender: "network_type_str" },
-          filters: [
-            { text: "WIFI", value: "2" },
-            { text: "网线", value: "1" },
-            { text: "移动网络", value: "3" }
-          ],
-          filteredValue: filteredInfo.network_type || null,
-          onFilter: (value, record) => record.network_type.includes(value)
-        },
-        {
-          title: '操作',
-          key: 'action',
-          scopedSlots: { customRender: 'action' },
-        }
-      ];
-      return columns;
-    }
+    columns: columns
   },
   created() {
     // fetch the data when the view is created and the data is
@@ -240,22 +286,101 @@ export default {
   watch: {
     // call again the method if the route changes
     $route: "fetchData"
+    // pageSize(val) {
+    //   console.log('pageSize', val);
+    // },
+    // current(val) {
+    //   console.log('current', val);
+    // },
   },
   methods: {
+    // onShowSizeChange(current, pageSize) {
+    //   console.log(current, pageSize);
+    // },
+    clearFilters() {
+      console.log(this.filteredInfo);
+      this.filteredInfo = null;
+    },
+    // table change event
+    handleChange(pagination, filters, sorter) {
+      console.log("Various parameters", pagination, filters, sorter);
+      this.filteredInfo = filters;
+      // this.sortedInfo = sorter;
+      const pager = { ...this.pagination };
+      pager.current = pagination.current;
+      pager.pageSize = pagination.pageSize;
+      this.pagination = pager;
+      this.fetchData();
+    },
+    onSearch() {
+      this.fetchData();
+    },
+    fetchData() {
+      this.error = this.post = null;
+      this.loading = true;
+      this.searchValue.shop_no = this.form.getFieldsValue().shop_no;
+      this.searchValue.shop_name = this.form.getFieldsValue().shop_name;
+      this.searchValue.app_version = this.form.getFieldsValue().app_version;
+      this.searchValue.company_sale_id = this.form.getFieldsValue().company_sale_id;
+      this.searchValue.model = this.form.getFieldsValue().model;
+      // this.searchValue.canary = this.form.getFieldsValue().canary;
+      this.getDeviceList((err, data) => {
+        this.loading = false;
+        this.selectedRowKeys = [];
+        // this.clearFilters();
+        if (err) {
+          this.error = err.toString();
+        } else {
+          this.data = data.list;
+          const pagination = { ...this.pagination };
+          pagination.total = data.total;
+          this.pagination = pagination;
+        }
+      });
+    },
+    getDeviceList(callback) {
+      let _this = this;
+      var shop_no = this.searchValue.shop_no;
+      var shop_name = this.searchValue.shop_name;
+      var app_version = this.searchValue.app_version;
+      var company_sale_id = this.searchValue.company_sale_id;
+      var model = this.searchValue.model;
+      // var canary = this.searchValue.canary || 0;
+      this.$ajax
+        .get("/get-misc-devices", {
+          params: {
+            shop_no: shop_no,
+            shop_name: shop_name,
+            app_version: app_version,
+            company_sale_id: company_sale_id,
+            model: model,
+            pageSize: _this.pagination.pageSize,
+            pageNum: _this.pagination.current,
+            is_canary: ((_this.filteredInfo==null || _this.filteredInfo.is_canary==null) ? 2 : _this.filteredInfo.is_canary[0])
+            // canary: canary
+          }
+        })
+        .then(function(res) {
+          callback(false, res.data);
+        })
+        .catch(function(error) {
+          callback(error, false);
+        });
+    },
     batchSetCanary() {
-      if(this.selectedRowKeys.length==0){
-        alert("请至少选择一个条目")
+      if (this.selectedRowKeys.length == 0) {
+        alert("请至少选择一个条目");
         return false;
       }
 
       this.loading = true;
       let selectedIds = "";
-      for(var i=0; i<this.selectedRows.length; i++){
+      for (var i = 0; i < this.selectedRows.length; i++) {
         selectedIds += "," + this.selectedRows[i].id;
       }
       //去除前端空格及逗号
-      selectedIds = selectedIds.replace(/^(\s|,)+/g, '');
-      
+      selectedIds = selectedIds.replace(/^(\s|,)+/g, "");
+
       let _this = this;
       this.batchSetCanaryAction(selectedIds, (err, data) => {
         _this.loading = false;
@@ -265,7 +390,7 @@ export default {
           alert(_this.error);
         } else {
           console.log("response data from go server: " + data);
-          for(var i=0; i<_this.selectedRows.length; i++){
+          for (var i = 0; i < _this.selectedRows.length; i++) {
             _this.selectedRows[i].is_canary = 1;
           }
           alert("设置成功");
@@ -273,19 +398,19 @@ export default {
       });
     },
     batchCancelCanary() {
-      if(this.selectedRowKeys.length==0){
-        alert("请至少选择一个条目")
+      if (this.selectedRowKeys.length == 0) {
+        alert("请至少选择一个条目");
         return false;
       }
 
       this.loading = true;
       let selectedIds = "";
-      for(var i=0; i<this.selectedRows.length; i++){
+      for (var i = 0; i < this.selectedRows.length; i++) {
         selectedIds += "," + this.selectedRows[i].id;
       }
       //去除前端空格及逗号
-      selectedIds = selectedIds.replace(/^(\s|,)+/g, '');
-      
+      selectedIds = selectedIds.replace(/^(\s|,)+/g, "");
+
       let _this = this;
       this.batchCancelCanaryAction(selectedIds, (err, data) => {
         _this.loading = false;
@@ -295,7 +420,7 @@ export default {
           alert(_this.error);
         } else {
           console.log("response data from go server: " + data);
-          for(var i=0; i<_this.selectedRows.length; i++){
+          for (var i = 0; i < _this.selectedRows.length; i++) {
             _this.selectedRows[i].is_canary = 0;
           }
           alert("取消成功");
@@ -333,7 +458,7 @@ export default {
     cancelCanary(id) {
       const newData = [...this.data];
       const target = newData.filter(item => id === item.id)[0];
-      if(target){
+      if (target) {
         let _this = this;
         this.cancelCanaryAction(id, (err, data) => {
           if (err) {
@@ -347,13 +472,12 @@ export default {
           }
         });
       }
-      
     },
     //设置为灰度设备
     setCanary(id) {
       const newData = [...this.data];
       const target = newData.filter(item => id === item.id)[0];
-      if(target){
+      if (target) {
         let _this = this;
         this.setCanaryAction(id, (err, data) => {
           if (err) {
@@ -367,7 +491,6 @@ export default {
           }
         });
       }
-      
     },
     setCanaryAction(device_id, callback) {
       let _this = this;
@@ -391,57 +514,6 @@ export default {
         })
         .then(function(res) {
           console.log("response from go server: " + res);
-          callback(false, res.data);
-        })
-        .catch(function(error) {
-          callback(error, false);
-        });
-    },
-    clearFilters() {
-      console.log(this.filteredInfo);
-      this.filteredInfo = null;
-    },
-    handleChange(pagination, filters, sorter) {
-      console.log("Various parameters", pagination, filters, sorter);
-      this.filteredInfo = filters;
-      // this.sortedInfo = sorter;
-    },
-    onSearch() {
-      this.fetchData();
-    },
-    fetchData() {
-      this.error = this.post = null;
-      this.loading = true;
-      this.searchValue.shop_no = this.form.getFieldsValue().shop_no;
-      this.searchValue.shop_name = this.form.getFieldsValue().shop_name;
-      this.searchValue.app_version = this.form.getFieldsValue().app_version;
-      // this.searchValue.canary = this.form.getFieldsValue().canary;
-      this.getDeviceList((err, data) => {
-        this.loading = false;
-        this.selectedRowKeys = [];
-        this.clearFilters();
-        if (err) {
-          this.error = err.toString();
-        } else {
-          this.data = data;
-        }
-      });
-    },
-    getDeviceList(callback) {
-      var shop_no = this.searchValue.shop_no;
-      var shop_name = this.searchValue.shop_name;
-      var app_version = this.searchValue.app_version;
-      // var canary = this.searchValue.canary || 0;
-      this.$ajax
-        .get("/get-misc-devices", {
-          params: {
-            shop_no: shop_no,
-            shop_name: shop_name,
-            app_version: app_version
-            // canary: canary
-          }
-        })
-        .then(function(res) {
           callback(false, res.data);
         })
         .catch(function(error) {

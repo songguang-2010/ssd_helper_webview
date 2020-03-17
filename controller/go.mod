@@ -13,6 +13,7 @@ require (
 	model/sku v0.0.0
 	model/stat v0.0.0
 	model/tps v0.0.0
+	service/misc v0.0.0
 )
 
 replace lib/response v0.0.0 => ../lib/response
@@ -34,3 +35,5 @@ replace model/tps v0.0.0 => ../model/tps
 replace model/misc v0.0.0 => ../model/misc
 
 replace model/stat v0.0.0 => ../model/stat
+
+replace service/misc v0.0.0 => ../service/misc

@@ -15,6 +15,7 @@ import Menu from 'ant-design-vue/lib/menu'
 import Icon from 'ant-design-vue/lib/icon'
 import Breadcrumb from 'ant-design-vue/lib/breadcrumb'
 import Table from 'ant-design-vue/lib/table'
+import Pagination from 'ant-design-vue/lib/pagination'
 import Input from 'ant-design-vue/lib/input'
 import Form from 'ant-design-vue/lib/form'
 import Col from 'ant-design-vue/lib/col'
@@ -31,6 +32,7 @@ Vue.use(Menu)
 Vue.use(Icon)
 Vue.use(Breadcrumb)
 Vue.use(Table)
+Vue.use(Pagination)
 Vue.use(Input)
 Vue.use(Form)
 Vue.use(Col)

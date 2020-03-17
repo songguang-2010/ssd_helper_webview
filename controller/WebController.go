@@ -15,6 +15,7 @@ import (
 	ssd_sku "model/sku"
 	ssd_stat "model/stat"
 	ssd_tps "model/tps"
+	// service_ssd_misc "service/misc"
 	// "net"
 	"crypto/md5"
 	"encoding/hex"
@@ -27,6 +28,7 @@ import (
 	// "os"
 	// "path/filepath"
 	// "runtime"
+	"strconv"
 )
 
 var uid int
@@ -125,7 +127,9 @@ func httpPostForm(addr string, vals map[string][]string) (interface{}, error) {
 	nonceStr := GetRandomSalt()
 	signature := createSignature(token, uid, timestampNow, nonceStr, values)
 	getParams := fmt.Sprintf("token=%s&uid=%d&timestamp=%d&nonce=%s&signature=%s", token, uid, timestampNow, nonceStr, signature)
-	resp, err := http.PostForm("http://application-adm-api"+addr+"?"+getParams, values)
+	postAddr := fmt.Sprintf("http://172.31.1.21:8101%s?%s", addr, getParams)
+	fmt.Println(postAddr)
+	resp, err := http.PostForm(postAddr, values)
 	if err != nil {
 		// handle error
 		fmt.Println(err.Error())
@@ -586,16 +590,33 @@ func (c *WebController) GetSkuRequests(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *WebController) GetMiscDevices(w http.ResponseWriter, r *http.Request) {
+	//接收客户端参数
 	shopNo := string(r.Form.Get("shop_no"))
 	shopName := string(r.Form.Get("shop_name"))
-	searchNoArr := make([]string, 0)
 	appVersion := string(r.Form.Get("app_version"))
+	companySaleId := string(r.Form.Get("company_sale_id"))
+	model := string(r.Form.Get("model"))
+
+	// 是否灰度设备
+	isCanary, err := strconv.Atoi(string(r.Form.Get("is_canary")))
+	serror.Check(err)
+
+	//分页参数
+	pageNum, err := strconv.Atoi(string(r.Form.Get("pageNum")))
+	serror.Check(err)
+	pageSize, err := strconv.Atoi(string(r.Form.Get("pageSize")))
+	serror.Check(err)
+	fmt.Println("current page num: ", pageNum)
+	fmt.Println("current page size: ", pageSize)
 	// canary := string(r.Form.Get("canary"))
+
+	//声明门店编码过滤数组
+	searchShopNoArr := make([]string, 0)
 
 	// isCanary, err := strconv.Atoi(canary)
 	// serror.Check(err)
 
-	//实例化数据模型
+	//实例化门店信息缓存数据模型
 	shopModel, err := ssd_stat.CreateJwdShopCache()
 	serror.Check(err)
 	defer func() {
@@ -603,44 +624,26 @@ func (c *WebController) GetMiscDevices(w http.ResponseWriter, r *http.Request) {
 		serror.Check(errClean)
 	}()
 
+	//如果搜索参数中含有门店名称
 	if shopName != "" {
-		//根据门店名称查询门店编码
-		rowsShop, err := shopModel.GetListByName(shopName)
+		//根据门店名称查询相关门店列表
+		shopList, err := shopModel.GetListByName(shopName)
 		serror.Check(err)
-		defer rowsShop.Close()
+		defer shopList.Close()
 
-		for rowsShop.Next() {
-			shopRecord, err := shopModel.ScanRow(rowsShop)
+		//循环处理, 提取门店编码
+		for shopList.Next() {
+			shopInfo, err := shopModel.ScanRow(shopList)
 			serror.Check(err)
-			//计入当前处理数组
-			searchNoArr = append(searchNoArr, shopRecord.ShopNo)
+			//计入当前门店编码过滤数组
+			searchShopNoArr = append(searchShopNoArr, shopInfo.ShopNo)
 		}
 	}
 
+	//如果搜索参数中含有门店编码
 	if shopNo != "" {
-		searchNoArr = append(searchNoArr, shopNo)
-	}
-
-	//灰度设备id列表
-	deviceIDMap := make(map[int]int)
-
-	//实例化数据模型
-	canaryDeviceModel, err := ssd_misc.CreateCanaryDevice()
-	serror.Check(err)
-	defer func() {
-		errClean := canaryDeviceModel.CloseDB()
-		serror.Check(errClean)
-	}()
-	//查询灰度设备id列表
-	rowsDeviceCanary, err := canaryDeviceModel.GetList()
-	serror.Check(err)
-	defer rowsDeviceCanary.Close()
-
-	for rowsDeviceCanary.Next() {
-		canaryRecord, err := canaryDeviceModel.ScanRow(rowsDeviceCanary)
-		serror.Check(err)
-		//计入当前灰度设备列表
-		deviceIDMap[canaryRecord.DeviceID] = canaryRecord.DeviceID
+		//将门店编码计入当前门店编码过滤数组
+		searchShopNoArr = append(searchShopNoArr, shopNo)
 	}
 
 	//实例化数据模型
@@ -651,80 +654,115 @@ func (c *WebController) GetMiscDevices(w http.ResponseWriter, r *http.Request) {
 		serror.Check(errClean)
 	}()
 
-	rows, err := deviceModel.GetList(searchNoArr, appVersion)
+	// 获取设备数量
+	count := deviceModel.GetComplexCount(searchShopNoArr, appVersion, companySaleId, model, isCanary)
+	// 获取设备列表数据
+	rows, err := deviceModel.GetComplexList(searchShopNoArr, appVersion, companySaleId, model, isCanary, pageSize, pageNum)
 	serror.Check(err)
 	defer rows.Close()
 
 	//初始化数组
-	pubArr := make([]ssd_misc.Record, 0)
+	pubArr := make([]ssd_misc.ComplexRecord, 0)
 
 	//循环处理
 	for rows.Next() {
-		oRecord, err := deviceModel.ScanRow(rows)
+		oRecord, err := deviceModel.ScanComplexRow(rows)
 		serror.Check(err)
 		//计入当前处理数组
 		pubArr = append(pubArr, oRecord)
 	}
 
+	//初始化门店编码及名称映射列表
+	shopMap := make(map[string]string)
+	if len(pubArr) != 0 {
+		//获取门店编码列表
+		shopNoArr := make([]string, 0)
+		for _, value := range pubArr {
+			shopNoArr = append(shopNoArr, value.ShopNo)
+		}
+		//获取门店信息列表
+		rowsShopList, err := shopModel.GetListByShopNoArr(shopNoArr)
+		serror.Check(err)
+		defer rowsShopList.Close()
+		//遍历读取门店信息
+		for rowsShopList.Next() {
+			oRecord, err := shopModel.ScanRow(rowsShopList)
+			serror.Check(err)
+			//计入当前门店编码及名称映射列表
+			shopMap[oRecord.ShopNo] = oRecord.ShopName
+		}
+	}
+
+	//初始化灰度设备id映射列表
+	// deviceIDMap := make(map[int]int)
+	//实例化灰度设备服务模型
+	// canaryDeviceService, err := service_ssd_misc.CreateCanaryDevice()
+	// serror.Check(err)
+	//查询灰度设备id列表
+	// deviceIDArr, err := canaryDeviceService.GetDeviceIdList()
+	// serror.Check(err)
+	// for _, v := range deviceIDArr {
+	//计入当前灰度设备列表
+	// deviceIDMap[v] = 1
+	// }
+
+	//定义返回数据类型
 	type resRecord struct {
-		ID          int    `json:"id"`
-		ShopNo      string `json:"shop_no"`
-		ShopName    string `json:"shop_name"`
-		AppVersion  string `json:"app_version"`
-		SerialNo    string `json:"serial_no"`
-		NetworkType string `json:"network_type"`
-		AppEnv      string `json:"app_env"`
-		IsCanary    string `json:"is_canary"`
-		UpdateTime  string `json:"update_time"`
-		CreateTime  string `json:"create_time"`
+		ID            int    `json:"id"`
+		ShopNo        string `json:"shop_no"`
+		ShopName      string `json:"shop_name"`
+		AppVersion    string `json:"app_version"`
+		SerialNo      string `json:"serial_no"`
+		NetworkType   string `json:"network_type"`
+		AppEnv        string `json:"app_env"`
+		IsCanary      string `json:"is_canary"`
+		UpdateTime    string `json:"update_time"`
+		CreateTime    string `json:"create_time"`
+		CompanySaleId string `json:"company_sale_id"`
 	}
 
 	//初始化返回数组
 	resArr := make([]resRecord, 0)
 
-	//获取门店名称
 	if len(pubArr) != 0 {
-		shopNoArr := make([]string, 0)
+		// 构造返回数组
 		for _, value := range pubArr {
-			shopNoArr = append(shopNoArr, value.ShopNo)
-		}
-
-		rowsShopList, err := shopModel.GetListByShopNoArr(shopNoArr)
-		serror.Check(err)
-		defer rowsShopList.Close()
-
-		//初始化shop map
-		shopMap := make(map[string]string)
-
-		for rowsShopList.Next() {
-			oRecord, err := shopModel.ScanRow(rowsShopList)
-			serror.Check(err)
-			//计入当前处理数组
-			shopMap[oRecord.ShopNo] = oRecord.ShopName
-		}
-
-		for _, value := range pubArr {
+			//是否灰度设备
 			isCanary := "0"
-			if deviceIDMap[value.ID] != 0 {
+			// if deviceIDMap[value.ID] != 0 {
+			// isCanary = "1"
+			// }
+			if value.CanaryId != 0 {
 				isCanary = "1"
 			}
 
+			// 返回数组
 			resArr = append(resArr, resRecord{
-				ID:          value.ID,
-				ShopNo:      value.ShopNo,
-				ShopName:    shopMap[value.ShopNo],
-				UpdateTime:  value.UpdateTime,
-				AppVersion:  value.AppVersion,
-				SerialNo:    value.SerialNo,
-				NetworkType: value.NetworkType,
-				AppEnv:      value.AppEnv,
-				IsCanary:    isCanary,
-				CreateTime:  value.CreateTime,
+				ID:            value.ID,
+				ShopNo:        value.ShopNo,
+				ShopName:      shopMap[value.ShopNo],
+				UpdateTime:    value.UpdateTime,
+				AppVersion:    value.AppVersion,
+				SerialNo:      value.SerialNo,
+				NetworkType:   value.NetworkType,
+				AppEnv:        value.AppEnv,
+				IsCanary:      isCanary,
+				CreateTime:    value.CreateTime,
+				CompanySaleId: value.CompanySaleId,
 			})
 		}
 	}
 
-	response.ResponseSuccess(w, resArr)
+	//构造实际返回数据
+	type resData struct {
+		Total int         `json:"total"`
+		List  []resRecord `json:"list"`
+	}
+
+	response.ResponseSuccess(w, resData{
+		Total: count,
+		List:  resArr,
+	})
 }
 
 func (c *WebController) GetTpsOrders(w http.ResponseWriter, r *http.Request) {

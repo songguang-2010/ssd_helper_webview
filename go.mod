@@ -76,6 +76,8 @@ replace model/tps v0.0.0 => ./model/tps
 
 replace model/misc v0.0.0 => ./model/misc
 
+replace service/misc v0.0.0 => ./service/misc
+
 replace model/stat v0.0.0 => ./model/stat
 
 replace lib/log v0.0.0 => ./lib/log
