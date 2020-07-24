@@ -35,10 +35,13 @@
       </a-sub-menu>
       <a-sub-menu key="sub3">
         <span slot="title">
-          <a-icon type="laptop" />聚合订单
+          <a-icon type="laptop" />聚合服务
         </span>
         <a-menu-item key="3001">
-          <router-link to="/aos-order-list">订单记录</router-link>
+          <router-link to="/aos-order-list">订单管理</router-link>
+        </a-menu-item>
+        <a-menu-item key="3002">
+          <router-link to="/aos-job-list">任务管理</router-link>
         </a-menu-item>
       </a-sub-menu>
       <a-sub-menu key="sub4">

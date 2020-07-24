@@ -28,7 +28,7 @@ import (
 	// "os"
 	// "path/filepath"
 	// "runtime"
-	"strconv"
+	// "strconv"
 )
 
 var uid int
@@ -590,31 +590,6 @@ func (c *WebController) GetSkuRequests(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *WebController) GetMiscDevices(w http.ResponseWriter, r *http.Request) {
-	//接收客户端参数
-	shopNo := string(r.Form.Get("shop_no"))
-	shopName := string(r.Form.Get("shop_name"))
-	appVersion := string(r.Form.Get("app_version"))
-	companySaleId := string(r.Form.Get("company_sale_id"))
-	model := string(r.Form.Get("model"))
-
-	// 是否灰度设备
-	isCanary, err := strconv.Atoi(string(r.Form.Get("is_canary")))
-	serror.Check(err)
-
-	//分页参数
-	pageNum, err := strconv.Atoi(string(r.Form.Get("pageNum")))
-	serror.Check(err)
-	pageSize, err := strconv.Atoi(string(r.Form.Get("pageSize")))
-	serror.Check(err)
-	fmt.Println("current page num: ", pageNum)
-	fmt.Println("current page size: ", pageSize)
-	// canary := string(r.Form.Get("canary"))
-
-	//声明门店编码过滤数组
-	searchShopNoArr := make([]string, 0)
-
-	// isCanary, err := strconv.Atoi(canary)
-	// serror.Check(err)
 
 	//实例化门店信息缓存数据模型
 	shopModel, err := ssd_stat.CreateJwdShopCache()
@@ -623,6 +598,46 @@ func (c *WebController) GetMiscDevices(w http.ResponseWriter, r *http.Request) {
 		errClean := shopModel.CloseDB()
 		serror.Check(errClean)
 	}()
+
+	//实例化设备列表数据模型
+	deviceModel, err := ssd_misc.CreateDevice()
+	serror.Check(err)
+	defer func() {
+		errClean := deviceModel.CloseDB()
+		serror.Check(errClean)
+	}()
+
+	//接收客户端参数
+	shopNo := string(r.Form.Get("shop_no"))
+	shopName := string(r.Form.Get("shop_name"))
+	appVersion := string(r.Form.Get("app_version"))
+	companySaleId := string(r.Form.Get("company_sale_id"))
+	model := string(r.Form.Get("model"))
+	// 是否排除南极店测试数据
+	testExclude := string(r.Form.Get("test_exclude"))
+	// 是否灰度设备
+	isCanary := string(r.Form.Get("is_canary"))
+	// 灰度状态
+	appEnv := string(r.Form.Get("app_env"))
+	//分页参数
+	pageNum := string(r.Form.Get("pageNum"))
+	pageSize := string(r.Form.Get("pageSize"))
+	fmt.Println("current page num: ", pageNum)
+	fmt.Println("current page size: ", pageSize)
+
+	// 构造参数map
+	paramsMap := make(map[string]string)
+	paramsMap["appVersion"] = appVersion
+	paramsMap["companySaleId"] = companySaleId
+	paramsMap["model"] = model
+	paramsMap["isCanary"] = isCanary
+	paramsMap["testExclude"] = testExclude
+	paramsMap["appEnv"] = appEnv
+	paramsMap["pageNum"] = pageNum
+	paramsMap["pageSize"] = pageSize
+
+	//声明门店编码过滤数组
+	searchShopNoArr := make([]string, 0)
 
 	//如果搜索参数中含有门店名称
 	if shopName != "" {
@@ -646,18 +661,11 @@ func (c *WebController) GetMiscDevices(w http.ResponseWriter, r *http.Request) {
 		searchShopNoArr = append(searchShopNoArr, shopNo)
 	}
 
-	//实例化数据模型
-	deviceModel, err := ssd_misc.CreateDevice()
-	serror.Check(err)
-	defer func() {
-		errClean := deviceModel.CloseDB()
-		serror.Check(errClean)
-	}()
-
 	// 获取设备数量
-	count := deviceModel.GetComplexCount(searchShopNoArr, appVersion, companySaleId, model, isCanary)
+	count, err := deviceModel.GetComplexCount(searchShopNoArr, paramsMap)
+	serror.Check(err)
 	// 获取设备列表数据
-	rows, err := deviceModel.GetComplexList(searchShopNoArr, appVersion, companySaleId, model, isCanary, pageSize, pageNum)
+	rows, err := deviceModel.GetComplexList(searchShopNoArr, paramsMap)
 	serror.Check(err)
 	defer rows.Close()
 
@@ -728,12 +736,9 @@ func (c *WebController) GetMiscDevices(w http.ResponseWriter, r *http.Request) {
 		// 构造返回数组
 		for _, value := range pubArr {
 			//是否灰度设备
-			isCanary := "0"
-			// if deviceIDMap[value.ID] != 0 {
-			// isCanary = "1"
-			// }
+			isSetCanary := "0"
 			if value.CanaryId != 0 {
-				isCanary = "1"
+				isSetCanary = "1"
 			}
 
 			// 返回数组
@@ -746,7 +751,7 @@ func (c *WebController) GetMiscDevices(w http.ResponseWriter, r *http.Request) {
 				SerialNo:      value.SerialNo,
 				NetworkType:   value.NetworkType,
 				AppEnv:        value.AppEnv,
-				IsCanary:      isCanary,
+				IsCanary:      isSetCanary,
 				CreateTime:    value.CreateTime,
 				CompanySaleId: value.CompanySaleId,
 			})
@@ -763,6 +768,112 @@ func (c *WebController) GetMiscDevices(w http.ResponseWriter, r *http.Request) {
 		Total: count,
 		List:  resArr,
 	})
+}
+
+func (c *WebController) GetAosJobs(w http.ResponseWriter, r *http.Request) {
+
+	//实例化任务列表数据模型
+	jobModel, err := ssd_aos.CreateJob()
+	serror.Check(err)
+	defer func() {
+		errClean := jobModel.CloseDB()
+		serror.Check(errClean)
+	}()
+
+	//接收客户端参数
+	//类型
+	jobType := string(r.Form.Get("type"))
+	//状态
+	jobStatus := string(r.Form.Get("status"))
+
+	//分页参数
+	pageNum := string(r.Form.Get("pageNum"))
+	pageSize := string(r.Form.Get("pageSize"))
+
+	// 构造参数map
+	paramsMap := make(map[string]string)
+	paramsMap["type"] = jobType
+	paramsMap["status"] = jobStatus
+	paramsMap["pageNum"] = pageNum
+	paramsMap["pageSize"] = pageSize
+
+	// 获取任务数量
+	count, err := jobModel.GetComplexCount(paramsMap)
+	serror.Check(err)
+	// 获取设备列表数据
+	rows, err := jobModel.GetComplexList(paramsMap)
+	serror.Check(err)
+	defer rows.Close()
+
+	//初始化数组
+	pubArr := make([]ssd_aos.Record, 0)
+
+	//循环处理
+	for rows.Next() {
+		oRecord, err := jobModel.ScanRow(rows)
+		serror.Check(err)
+		//计入当前处理数组
+		pubArr = append(pubArr, oRecord)
+	}
+
+	//构造实际返回数据
+	type resData struct {
+		Total int              `json:"total"`
+		List  []ssd_aos.Record `json:"list"`
+	}
+
+	response.ResponseSuccess(w, resData{
+		Total: count,
+		List:  pubArr,
+	})
+}
+
+func (c *WebController) GetCanaryAppVersions(w http.ResponseWriter, r *http.Request) {
+	//实例化数据模型
+	canaryAppModel, err := ssd_misc.CreateCanaryAppVersion()
+	serror.Check(err)
+	defer func() {
+		errClean := canaryAppModel.CloseDB()
+		serror.Check(errClean)
+	}()
+
+	// 获取版本列表
+	rows, err := canaryAppModel.GetList()
+	serror.Check(err)
+	defer rows.Close()
+
+	//初始化数组
+	pubArr := make([]ssd_misc.CanaryAppVersionRecord, 0)
+
+	//循环处理
+	for rows.Next() {
+		oRecord, err := canaryAppModel.ScanRow(rows)
+		serror.Check(err)
+		//计入当前处理数组
+		pubArr = append(pubArr, oRecord)
+	}
+
+	//定义返回数据类型
+	type resRecord struct {
+		ID         int    `json:"id"`
+		AppVersion string `json:"app_version"`
+	}
+
+	//初始化返回数组
+	resArr := make([]resRecord, 0)
+
+	if len(pubArr) != 0 {
+		// 构造返回数组
+		for _, value := range pubArr {
+			// 返回数组
+			resArr = append(resArr, resRecord{
+				ID:         value.ID,
+				AppVersion: value.Version,
+			})
+		}
+	}
+
+	response.ResponseSuccess(w, resArr)
 }
 
 func (c *WebController) GetTpsOrders(w http.ResponseWriter, r *http.Request) {

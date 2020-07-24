@@ -49,6 +49,8 @@ if (process.env.NODE_ENV == "production") {
   axios.defaults.baseURL = '/'
 }
 console.log(process.env.NODE_ENV)
+//设置请求头
+axios.defaults.headers.post["Content-type"] = "application/json"
 
 //初始化运行时, 清除token信息
 store.commit("removeToken");

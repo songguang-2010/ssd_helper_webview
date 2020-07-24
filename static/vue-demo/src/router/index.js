@@ -9,6 +9,7 @@ import SkuRequestList from '@/components/SkuRequestList'
 import SkuResponseList from '@/components/SkuResponseList'
 import SsdOrderList from '@/components/SsdOrderList'
 import AosOrderList from '@/components/AosOrderList'
+import AosJobList from '@/components/AosJobList'
 import TpsOrderList from '@/components/TpsOrderList'
 import MiscDeviceList from '@/components/MiscDeviceList'
 import Login from '@/components/Login';
@@ -80,6 +81,11 @@ const router = new Router({
           path: '/misc-device-list',
           name: 'MiscDeviceList',
           component: MiscDeviceList
+        },
+        {
+          path: '/aos-job-list',
+          name: 'AosJobList',
+          component: AosJobList
         }
       ]
     }

@@ -54,7 +54,7 @@ cp -R ${filepath}/static/vue-demo/dist/* ${GOPATH}/src/ssd_helper_webview/app/
 
 #交叉编译
 if [ $compileType = "cross" ]; then
-  cd ${GOPATH}/src/ && ${GOPATH}/bin/xgo --image=xgo-up --targets="linux/amd64,windows-7.0/amd64" -dest ./ssd_helper_webview/ ./ssd_helper_webview
+  cd ${GOPATH}/src/ && ${GOPATH}/bin/xgo --image=xgo-up --targets="linux/amd64,windows-7.0/amd64,darwin/*" -dest ./ssd_helper_webview/ ./ssd_helper_webview
   # cd ${GOPATH}/src/ && ${GOPATH}/bin/xgo --image=xgo-up --targets="linux/amd64,windows-7.0/amd64" -dest ./ssd_helper_webview/ ./ssd_helper_webview
 else
 #linux编译

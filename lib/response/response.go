@@ -23,8 +23,12 @@ func ResponseError(w http.ResponseWriter, code int) {
 
 	//允许访问所有域
 	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+	w.Header().Set("Access-Control-Expose-Headers", "Cache-Control,Content-Language,Content-Type,Expires、Last-Modified,Pragma")
+
+	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 	//header的类型
-	w.Header().Add("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Add("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Connection, authorization, User-Agent, Cookie, token'")
 	w.Header().Set("content-type", "application/json")
 	// w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("Connection", "keep-alive")
@@ -35,8 +39,15 @@ func ResponseError(w http.ResponseWriter, code int) {
 }
 
 func ResponseSuccess(w http.ResponseWriter, data interface{}) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")             //允许访问所有域
-	w.Header().Add("Access-Control-Allow-Headers", "Content-Type") //header的类型
+	w.Header().Set("Access-Control-Allow-Origin", "*") //允许访问所有域
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+	w.Header().Set("Access-Control-Expose-Headers", "Cache-Control,Content-Language,Content-Type,Expires、Last-Modified,Pragma")
+
+	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+	//header的类型
+	w.Header().Add("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Connection, authorization, User-Agent, Cookie, token'")
+
+	// w.Header().Add("Access-Control-Allow-Headers", "Content-Type") //header的类型
 	w.Header().Set("content-type", "application/json")
 	// w.Header().Set("X-Content-Type-Options", "nosniff")
 

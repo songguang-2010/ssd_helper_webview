@@ -57,7 +57,16 @@ module.exports = {
     // Paths
     assetsRoot: path.resolve(__dirname, '../dist'),
     assetsSubDirectory: 'static',
-    assetsPublicPath: '/',
+    assetsPublicPath: './',
+    // proxyTable: {
+    //   '/api/**': {
+    //     target: 'http://127.0.0.1:39493/',
+    //     changeOrigin: true, //改变源
+    //     pathRewrite: {
+    //       '^/api': '/'
+    //     }
+    //   },
+    // },
 
     /**
      * Source Maps

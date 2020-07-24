@@ -7,6 +7,7 @@ import (
 	// "lib/log"
 	"net/http"
 	// "os"
+	"lib/response"
 	"reflect"
 )
 
@@ -83,6 +84,14 @@ func (p *MyMux) GetPublicPath() string {
 func (p *MyMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("current path : ", r.URL.Path)
 	fmt.Println("current method : ", r.Method)
+
+	// 如果是options方法，则直接返回成功状态，并结束响应
+	if r.Method == "OPTIONS" {
+		resRecord := make(map[string]string)
+		resRecord["result"] = "ok"
+		response.ResponseSuccess(w, resRecord)
+		return
+	}
 	//返回数据格式是json
 	r.ParseForm()
 	// fmt.Println("收到客户端请求: ", r.Form)

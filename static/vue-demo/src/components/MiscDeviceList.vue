@@ -26,6 +26,19 @@
                 `model`
                 ]" />
       </a-form-item>
+      <a-form-item :label="`排除测试数据`">
+        <a-select 
+          defaultValue="1"
+          @change="handleTestExcludeChange"
+        >
+          <a-select-option value="1">
+            是
+          </a-select-option>
+          <a-select-option value="0">
+            否
+          </a-select-option>
+        </a-select>
+      </a-form-item>
       <!-- <a-form-item label="灰度设备" :label-col="{ span: 5 }" :wrapper-col="{ span: 12 }">
         <a-select v-decorator="['canary', { initialValue: '0'}]" style="width: 270px;">
           <a-select-option value="0">不限</a-select-option>
@@ -44,14 +57,6 @@
     <div v-if="error" class="error">{{ error }}</div>
 
     <div v-if="data" class="content">
-      <span v-if="filteredInfo">
-        <span v-if="filteredInfo.app_env != '' && filteredInfo.app_env">
-          <a-tag color="blue">灰度状态: {{appEnvMap[filteredInfo.app_env]}}</a-tag>
-        </span>
-        <span v-if="filteredInfo.is_canary != '' && filteredInfo.is_canary">
-          <a-tag color="blue">灰度设备: {{isCanaryMap[filteredInfo.is_canary]}}</a-tag>
-        </span>
-      </span>
 
       <div style="margin-bottom: 16px">
         <a-button type="primary" @click="batchSetCanary" :loading="loading">设为灰度设备</a-button>
@@ -65,7 +70,7 @@
         :columns="columns"
         :dataSource="data"
         :pagination="pagination"
-        @change="handleChange"
+        @change="handleTableChange"
         :rowSelection="rowSelection"
       >
         <span
@@ -124,6 +129,13 @@
 //     },
 //   };
 
+//版本号过滤枚举结构
+let filtersAppVersion = [
+        // { text: "是", value: "1" },
+        // { text: "否", value: "0" }
+      ];
+
+//列数据描述
 const columns = function() {
   let { filteredInfo } = this;
   filteredInfo = filteredInfo || {};
@@ -151,7 +163,11 @@ const columns = function() {
     {
       title: "App版本号",
       dataIndex: "app_version",
-      key: "app_version"
+      key: "app_version",
+      filters: filtersAppVersion,
+      filteredValue: filteredInfo.app_version || null,
+      onFilter: (value, record) => record.app_version.includes(value),
+      filterMultiple: false
     },
     {
       title: "更新时间",
@@ -169,7 +185,8 @@ const columns = function() {
         { text: "未灰度", value: "prod" }
       ],
       filteredValue: filteredInfo.app_env || null,
-      onFilter: (value, record) => record.app_env.includes(value)
+      onFilter: (value, record) => record.app_env.includes(value),
+      filterMultiple: false
     },
     {
       title: "灰度设备",
@@ -206,6 +223,7 @@ const columns = function() {
   return columns;
 };
 
+//列表达翻译
 const columnsMaps = {
   networkTypeMap: {
     1: "网线",
@@ -222,6 +240,7 @@ const columnsMaps = {
   }
 };
 
+//分页
 const pagination = {
   pageSize: 20,
   current: 1,
@@ -230,6 +249,7 @@ const pagination = {
   showSizeChanger: true
 };
 
+//导出对象
 export default {
   name: "MiscDeviceList",
   data() {
@@ -238,13 +258,14 @@ export default {
       loading: false,
       data: [],
       error: null,
-      // columns: columns,
       searchValue: {
         shop_no: "",
         shop_name: "",
         app_version: "",
         company_sale_id: "",
-        model: ""
+        model: "",
+        // 是否排除测试数据
+        test_exclude: "1"
         // canary: 0
       },
       form: this.$form.createForm(this, { name: "advanced_search" }),
@@ -281,11 +302,11 @@ export default {
   created() {
     // fetch the data when the view is created and the data is
     // already being observed
-    this.fetchData();
+    this.routeChange();
   },
   watch: {
     // call again the method if the route changes
-    $route: "fetchData"
+    $route: "routeChange"
     // pageSize(val) {
     //   console.log('pageSize', val);
     // },
@@ -294,6 +315,10 @@ export default {
     // },
   },
   methods: {
+    routeChange(){
+      this.fetchCanaryAppVersions();
+      this.fetchData();
+    },
     // onShowSizeChange(current, pageSize) {
     //   console.log(current, pageSize);
     // },
@@ -301,8 +326,12 @@ export default {
       console.log(this.filteredInfo);
       this.filteredInfo = null;
     },
+    handleTestExcludeChange(value){
+      this.searchValue.test_exclude = value
+      console.log("test exclude change")
+    },
     // table change event
-    handleChange(pagination, filters, sorter) {
+    handleTableChange(pagination, filters, sorter) {
       console.log("Various parameters", pagination, filters, sorter);
       this.filteredInfo = filters;
       // this.sortedInfo = sorter;
@@ -315,6 +344,38 @@ export default {
     onSearch() {
       this.fetchData();
     },
+    fetchCanaryAppVersions() {
+      this.error = null;
+      this.loading = true;
+      this.getCanaryAppVersions((err, data) => {
+        this.loading = false;
+        if (err) {
+          this.error = err.toString();
+        } else {
+          filtersAppVersion = [];
+          if(data.length>0){
+            for(var i=0;i<data.length;i++){
+              filtersAppVersion[i] = {
+                text: data[i].app_version,
+                value: data[i].app_version
+              };
+            }
+          }
+          console.log("filtersAppVersion:", filtersAppVersion)
+        }
+      });
+    },
+    getCanaryAppVersions(callback) {
+      let _this = this;
+      this.$ajax
+        .get("/get-canary-app-versions")
+        .then(function(res) {
+          callback(false, res.data);
+        })
+        .catch(function(error) {
+          callback(error, false);
+        });
+    },
     fetchData() {
       this.error = this.post = null;
       this.loading = true;
@@ -323,6 +384,7 @@ export default {
       this.searchValue.app_version = this.form.getFieldsValue().app_version;
       this.searchValue.company_sale_id = this.form.getFieldsValue().company_sale_id;
       this.searchValue.model = this.form.getFieldsValue().model;
+      // this.searchValue.test_exclude = this.form.getFieldsValue().test_exclude;
       // this.searchValue.canary = this.form.getFieldsValue().canary;
       this.getDeviceList((err, data) => {
         this.loading = false;
@@ -339,12 +401,14 @@ export default {
       });
     },
     getDeviceList(callback) {
+      console.log("Various parameters", this.pagination, this.filteredInfo);
       let _this = this;
       var shop_no = this.searchValue.shop_no;
       var shop_name = this.searchValue.shop_name;
       var app_version = this.searchValue.app_version;
       var company_sale_id = this.searchValue.company_sale_id;
       var model = this.searchValue.model;
+      var test_exclude = this.searchValue.test_exclude;
       // var canary = this.searchValue.canary || 0;
       this.$ajax
         .get("/get-misc-devices", {
@@ -354,10 +418,11 @@ export default {
             app_version: app_version,
             company_sale_id: company_sale_id,
             model: model,
+            test_exclude: test_exclude,
             pageSize: _this.pagination.pageSize,
             pageNum: _this.pagination.current,
-            is_canary: ((_this.filteredInfo==null || _this.filteredInfo.is_canary==null) ? 2 : _this.filteredInfo.is_canary[0])
-            // canary: canary
+            is_canary: ((_this.filteredInfo==null || _this.filteredInfo.is_canary==null || _this.filteredInfo.is_canary.length==0) ? 2 : _this.filteredInfo.is_canary[0]),
+            app_env: ((_this.filteredInfo==null || _this.filteredInfo.app_env==null || _this.filteredInfo.app_env.length==0) ? 'all' : _this.filteredInfo.app_env[0])
           }
         })
         .then(function(res) {
@@ -394,6 +459,7 @@ export default {
             _this.selectedRows[i].is_canary = 1;
           }
           alert("设置成功");
+          _this.fetchData()
         }
       });
     },
@@ -424,6 +490,7 @@ export default {
             _this.selectedRows[i].is_canary = 0;
           }
           alert("取消成功");
+          _this.fetchData()
         }
       });
     },
@@ -469,6 +536,7 @@ export default {
             target.is_canary = 0;
             _this.data = newData;
             alert("取消成功");
+            _this.fetchData()
           }
         });
       }
@@ -488,6 +556,7 @@ export default {
             target.is_canary = 1;
             _this.data = newData;
             alert("设置成功");
+            _this.fetchData()
           }
         });
       }

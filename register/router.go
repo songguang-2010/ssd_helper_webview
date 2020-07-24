@@ -38,6 +38,12 @@ func InitRouter() {
 		Function:   "Login",
 	})
 	route.AddRoute(route.RouteItem{
+		Method:     "OPTIONS",
+		Path:       "/login",
+		Controller: "WebController",
+		Function:   "Login",
+	})
+	route.AddRoute(route.RouteItem{
 		Method:     "GET",
 		Path:       "/get-sku-specs",
 		Controller: "WebController",
@@ -78,5 +84,11 @@ func InitRouter() {
 		Path:       "/get-misc-devices",
 		Controller: "WebController",
 		Function:   "GetMiscDevices",
+	})
+	route.AddRoute(route.RouteItem{
+		Method:     "GET",
+		Path:       "/get-canary-app-versions",
+		Controller: "WebController",
+		Function:   "GetCanaryAppVersions",
 	})
 }

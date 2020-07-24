@@ -13,8 +13,8 @@ import (
 	// "github.com/huandu/xstrings"
 	// "io"
 	"reflect"
+	"strconv"
 	"strings"
-	// "strconv"
 )
 
 //Record ...
@@ -71,22 +71,38 @@ func (oi *Device) prepare() *gorm.DB {
 	return db.Table(table)
 }
 
-func (oi *Device) getFields() []string {
-	var keys []string
+func (oi *Device) getFields() (string, error) {
+	table, err := oi.getTableName()
+	if err != nil {
+		return "", err
+	}
+
+	fields := ""
+
 	var oRecord Record
 	dataType := reflect.TypeOf(oRecord)
 	for k := 0; k < dataType.NumField(); k++ {
-		keys = append(keys, dataType.Field(k).Tag.Get("json"))
+		if k == 0 {
+			fields = fmt.Sprintf("%s.%s", table, dataType.Field(k).Tag.Get("json"))
+		} else {
+			fields = fmt.Sprintf("%s, %s.%s", fields, table, dataType.Field(k).Tag.Get("json"))
+		}
 	}
-	return keys
+
+	return fields, nil
 }
 
-func (oi *Device) buildConditions(shopNoArr []string, appVersion string, companySaleId string, model string) string {
+func (oi *Device) buildConditions(shopNoArr []string, appVersion string, companySaleId string, model string, appEnv string) (string, error) {
+	table, err := oi.getTableName()
+	if err != nil {
+		return "", err
+	}
+
 	where := ""
 	//构造条件语句
 	var whereArr []string
 
-	whereArr = append(whereArr, fmt.Sprintf("is_deleted=%d", 0))
+	whereArr = append(whereArr, fmt.Sprintf("%s.is_deleted=%d", table, 0))
 	if len(shopNoArr) != 0 {
 		shopNoStr := ""
 		for k, v := range shopNoArr {
@@ -97,16 +113,19 @@ func (oi *Device) buildConditions(shopNoArr []string, appVersion string, company
 			}
 		}
 		fmt.Println(shopNoStr)
-		whereArr = append(whereArr, fmt.Sprintf("shop_no in (%s)", shopNoStr))
+		whereArr = append(whereArr, fmt.Sprintf("%s.shop_no in (%s)", table, shopNoStr))
 	}
 	if appVersion != "" {
-		whereArr = append(whereArr, fmt.Sprintf("app_version='%s'", appVersion))
+		whereArr = append(whereArr, fmt.Sprintf("%s.app_version='%s'", table, appVersion))
 	}
 	if companySaleId != "" {
-		whereArr = append(whereArr, fmt.Sprintf("company_sale_id='%s'", companySaleId))
+		whereArr = append(whereArr, fmt.Sprintf("%s.company_sale_id='%s'", table, companySaleId))
 	}
 	if model != "" {
-		whereArr = append(whereArr, fmt.Sprintf("model='%s'", model))
+		whereArr = append(whereArr, fmt.Sprintf("%s.model='%s'", table, model))
+	}
+	if appEnv != "" {
+		whereArr = append(whereArr, fmt.Sprintf("%s.app_env='%s'", table, appEnv))
 	}
 	// if len(deviceIDArr) != 0 {
 	// 	deviceIDStr := ""
@@ -132,20 +151,50 @@ func (oi *Device) buildConditions(shopNoArr []string, appVersion string, company
 		}
 	}
 
-	return where
+	return where, nil
 }
 
 //GetList ...
-func (oi *Device) GetList(shopNoArr []string, appVersion string, companySaleId string, model string, pageSize int, pageNum int) (*sql.Rows, error) {
+func (oi *Device) GetList(shopNoArr []string, paramsMap map[string]string) (*sql.Rows, error) {
+	appVersion := paramsMap["appVersion"]
+	companySaleId := paramsMap["companySaleId"]
+	model := paramsMap["model"]
+	appEnv := paramsMap["appEnv"]
+	// 如果不过滤灰度状态，则设置为空
+	if appEnv == "all" {
+		appEnv = ""
+	}
+	// isCanary, err := strconv.Atoi(paramsMap["isCanary"])
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// testExclude, err := strconv.Atoi(paramsMap["testExclude"])
+	// if err != nil {
+	// 	return nil, err
+	// }
+	pageSize, err := strconv.Atoi(paramsMap["pageSize"])
+	if err != nil {
+		return nil, err
+	}
+	pageNum, err := strconv.Atoi(paramsMap["pageNum"])
+	if err != nil {
+		return nil, err
+	}
 	// len := len(shopId)
 	// prefix := strings.Repeat(string('0'), (10 - len))
-	where := oi.buildConditions(shopNoArr, appVersion, companySaleId, model)
+	where, err := oi.buildConditions(shopNoArr, appVersion, companySaleId, model, appEnv)
+	if err != nil {
+		return nil, err
+	}
 	limit := pageSize
 	offset := pageSize * (pageNum - 1)
-	fields := oi.getFields()
+	fields, err := oi.getFields()
+	if err != nil {
+		return nil, err
+	}
 
 	var rows *sql.Rows
-	var err error
+
 	if where != "" {
 		rows, err = oi.prepare().Select(fields).Where(where).Order("id desc").Offset(offset).Limit(limit).Rows()
 	} else {
@@ -159,62 +208,56 @@ func (oi *Device) GetList(shopNoArr []string, appVersion string, companySaleId s
 }
 
 //GetComplexList ...
-func (oi *Device) GetComplexList(shopNoArr []string, appVersion string, companySaleId string, model string, isCanary int, pageSize int, pageNum int) (*sql.Rows, error) {
-	where := ""
-	//构造条件语句
-	var whereArr []string
+func (oi *Device) GetComplexList(shopNoArr []string, paramsMap map[string]string) (*sql.Rows, error) {
+	appVersion := paramsMap["appVersion"]
+	companySaleId := paramsMap["companySaleId"]
+	model := paramsMap["model"]
+	appEnv := paramsMap["appEnv"]
+	// 如果不过滤灰度状态，则设置为空
+	if appEnv == "all" {
+		appEnv = ""
+	}
+	isCanary, err := strconv.Atoi(paramsMap["isCanary"])
+	if err != nil {
+		return nil, err
+	}
+	testExclude, err := strconv.Atoi(paramsMap["testExclude"])
+	if err != nil {
+		return nil, err
+	}
+	pageSize, err := strconv.Atoi(paramsMap["pageSize"])
+	if err != nil {
+		return nil, err
+	}
+	pageNum, err := strconv.Atoi(paramsMap["pageNum"])
+	if err != nil {
+		return nil, err
+	}
 
-	whereArr = append(whereArr, fmt.Sprintf("device.is_deleted=%d", 0))
-	if len(shopNoArr) != 0 {
-		shopNoStr := ""
-		for k, v := range shopNoArr {
-			if k == 0 {
-				shopNoStr = fmt.Sprintf("'%s'", strings.TrimSpace(v))
-			} else {
-				shopNoStr = fmt.Sprintf("%s,'%s'", shopNoStr, strings.TrimSpace(v))
-			}
-		}
-		fmt.Println(shopNoStr)
-		whereArr = append(whereArr, fmt.Sprintf("device.shop_no in (%s)", shopNoStr))
+	where, err := oi.buildConditions(shopNoArr, appVersion, companySaleId, model, appEnv)
+	if err != nil {
+		return nil, err
 	}
-	if appVersion != "" {
-		whereArr = append(whereArr, fmt.Sprintf("device.app_version='%s'", appVersion))
+
+	// 排除测试设备
+	if testExclude == 1 {
+		where = fmt.Sprintf("%s and device.shop_no<>'000001'", where)
 	}
-	if companySaleId != "" {
-		whereArr = append(whereArr, fmt.Sprintf("device.company_sale_id='%s'", companySaleId))
-	}
-	if model != "" {
-		whereArr = append(whereArr, fmt.Sprintf("device.model='%s'", model))
-	}
+
 	// 灰度设备
 	if isCanary == 1 {
-		whereArr = append(whereArr, fmt.Sprintf("canary_device.id<>0"))
+		where = fmt.Sprintf("%s and canary_device.id<>0", where)
 	} else if isCanary == 0 {
 		// 非灰度设备
-		whereArr = append(whereArr, fmt.Sprintf("canary_device.id IS NULL"))
+		where = fmt.Sprintf("%s and canary_device.id IS NULL", where)
 	}
-	if len(whereArr) > 0 {
-		for k, v := range whereArr {
-			// fmt.Println(k, v)
-			if k == 0 {
-				where = fmt.Sprintf("%s", v)
-			} else {
-				where = fmt.Sprintf("%s and %s", where, v)
-			}
-		}
-	}
+
 	limit := pageSize
 	offset := pageSize * (pageNum - 1)
-	fields := ""
-	// var keys []string
-	var oRecord Record
-	dataType := reflect.TypeOf(oRecord)
-	for k := 0; k < dataType.NumField(); k++ {
-		if k == 0 {
-			fields = fmt.Sprintf("device.%s", dataType.Field(k).Tag.Get("json"))
-		} else {
-			fields = fmt.Sprintf("%s, device.%s", fields, dataType.Field(k).Tag.Get("json"))
-		}
+
+	fields, err := oi.getFields()
+	if err != nil {
+		return nil, err
 	}
 
 	fields = fmt.Sprintf("%s, canary_device.id as canary_id", fields)
@@ -223,7 +266,7 @@ func (oi *Device) GetComplexList(shopNoArr []string, appVersion string, companyS
 	order := "device.id desc"
 
 	var rows *sql.Rows
-	var err error
+
 	if where != "" {
 		rows, err = oi.prepare().Select(fields).Joins(join).Where(where).Order(order).Offset(offset).Limit(limit).Rows()
 	} else {
@@ -238,49 +281,40 @@ func (oi *Device) GetComplexList(shopNoArr []string, appVersion string, companyS
 }
 
 //GetComplexCount ...
-func (oi *Device) GetComplexCount(shopNoArr []string, appVersion string, companySaleId string, model string, isCanary int) int {
-	where := ""
-	//构造条件语句
-	var whereArr []string
+func (oi *Device) GetComplexCount(shopNoArr []string, paramsMap map[string]string) (int, error) {
+	appVersion := paramsMap["appVersion"]
+	companySaleId := paramsMap["companySaleId"]
+	model := paramsMap["model"]
+	appEnv := paramsMap["appEnv"]
+	// 如果不过滤灰度状态，则设置为空
+	if appEnv == "all" {
+		appEnv = ""
+	}
+	isCanary, err := strconv.Atoi(paramsMap["isCanary"])
+	if err != nil {
+		return 0, err
+	}
+	testExclude, err := strconv.Atoi(paramsMap["testExclude"])
+	if err != nil {
+		return 0, err
+	}
 
-	whereArr = append(whereArr, fmt.Sprintf("device.is_deleted=%d", 0))
-	if len(shopNoArr) != 0 {
-		shopNoStr := ""
-		for k, v := range shopNoArr {
-			if k == 0 {
-				shopNoStr = fmt.Sprintf("'%s'", strings.TrimSpace(v))
-			} else {
-				shopNoStr = fmt.Sprintf("%s,'%s'", shopNoStr, strings.TrimSpace(v))
-			}
-		}
-		fmt.Println(shopNoStr)
-		whereArr = append(whereArr, fmt.Sprintf("device.shop_no in (%s)", shopNoStr))
+	where, err := oi.buildConditions(shopNoArr, appVersion, companySaleId, model, appEnv)
+	if err != nil {
+		return 0, err
 	}
-	if appVersion != "" {
-		whereArr = append(whereArr, fmt.Sprintf("device.app_version='%s'", appVersion))
+
+	// 排除测试设备
+	if testExclude == 1 {
+		where = fmt.Sprintf("%s and device.shop_no<>'000001'", where)
 	}
-	if companySaleId != "" {
-		whereArr = append(whereArr, fmt.Sprintf("device.company_sale_id='%s'", companySaleId))
-	}
-	if model != "" {
-		whereArr = append(whereArr, fmt.Sprintf("device.model='%s'", model))
-	}
+
 	// 灰度设备
 	if isCanary == 1 {
-		whereArr = append(whereArr, fmt.Sprintf("canary_device.id<>0"))
+		where = fmt.Sprintf("%s and canary_device.id<>0", where)
 	} else if isCanary == 0 {
 		// 非灰度设备
-		whereArr = append(whereArr, fmt.Sprintf("canary_device.id IS NULL"))
-	}
-	if len(whereArr) > 0 {
-		for k, v := range whereArr {
-			// fmt.Println(k, v)
-			if k == 0 {
-				where = fmt.Sprintf("%s", v)
-			} else {
-				where = fmt.Sprintf("%s and %s", where, v)
-			}
-		}
+		where = fmt.Sprintf("%s and canary_device.id IS NULL", where)
 	}
 
 	fields := "count(*)"
@@ -295,7 +329,7 @@ func (oi *Device) GetComplexCount(shopNoArr []string, appVersion string, company
 		oi.prepare().Select(fields).Joins(join).Order(order).Count(&count)
 	}
 
-	return count
+	return count, nil
 }
 
 //ScanComplexRow ...
@@ -314,11 +348,30 @@ func (oi *Device) ScanComplexRow(r *sql.Rows) (ComplexRecord, error) {
 }
 
 //GetCount ...
-func (oi *Device) GetCount(shopNoArr []string, appVersion string, companySaleId string, model string) int {
+func (oi *Device) GetCount(shopNoArr []string, paramsMap map[string]string) (int, error) {
+	appVersion := paramsMap["appVersion"]
+	companySaleId := paramsMap["companySaleId"]
+	model := paramsMap["model"]
+	appEnv := paramsMap["appEnv"]
+	// 如果不过滤灰度状态，则设置为空
+	if appEnv == "all" {
+		appEnv = ""
+	}
+	// isCanary, err := strconv.Atoi(paramsMap["isCanary"])
+	// if err != nil {
+	// 	return 0, err
+	// }
+	// testExclude, err := strconv.Atoi(paramsMap["testExclude"])
+	// if err != nil {
+	// 	return 0, err
+	// }
 	// len := len(shopId)
 	// prefix := strings.Repeat(string('0'), (10 - len))
 	// alias := "d"
-	where := oi.buildConditions(shopNoArr, appVersion, companySaleId, model)
+	where, err := oi.buildConditions(shopNoArr, appVersion, companySaleId, model, appEnv)
+	if err != nil {
+		return 0, err
+	}
 	fields := "count(*)"
 	count := 0
 
@@ -328,7 +381,7 @@ func (oi *Device) GetCount(shopNoArr []string, appVersion string, companySaleId 
 		oi.prepare().Select(fields).Count(&count)
 	}
 
-	return count
+	return count, nil
 }
 
 //ScanRow ...
