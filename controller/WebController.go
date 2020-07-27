@@ -324,6 +324,49 @@ func (c *WebController) SetCanary(w http.ResponseWriter, r *http.Request) {
 	response.ResponseSuccess(w, resRecord)
 }
 
+// AddJob 增加新任务
+func (c *WebController) AddJob(w http.ResponseWriter, r *http.Request) {
+
+	// 接收客户端请求值结构
+	type paramsClient struct {
+		JobType     string `json:"job_type"`
+		JobDate     string `json:"job_date"`
+		Description int    `json:"description"`
+	}
+
+	// 读取客户端请求值
+	rBody, _ := ioutil.ReadAll(r.Body)
+	rBodyJson := paramsClient{}
+	err := json.Unmarshal(rBody, &rBodyJson)
+	if err != nil {
+		fmt.Println("error occurred when decode json, msg: ", err.Error())
+		response.ResponseSuccess(w, 500)
+	}
+	job_type := fmt.Sprintf("%d", rBodyJson.JobType)
+	job_date := fmt.Sprintf("%s", rBodyJson.JobDate)
+	description := fmt.Sprintf("%s", rBodyJson.Description)
+
+	fmt.Println("job type from form: ", job_type)
+
+	vals := make(map[string][]string)
+	vals["jobType"] = []string{job_type}
+	vals["jobDate"] = []string{job_date}
+	vals["description"] = []string{description}
+
+	resRemote, err := httpPostForm("/job/add", vals)
+	if err != nil {
+		fmt.Println("error occurred when response from remote, msg: ", err.Error())
+		response.ResponseError(w, 500)
+	}
+
+	fmt.Printf("response from remote: %v", resRemote)
+
+	resRecord := make(map[string]string)
+	resRecord["result"] = "ok"
+
+	response.ResponseSuccess(w, resRecord)
+}
+
 func (c *WebController) Login(w http.ResponseWriter, r *http.Request) {
 
 	// 接收客户端请求值结构
@@ -798,28 +841,49 @@ func (c *WebController) GetAosJobs(w http.ResponseWriter, r *http.Request) {
 	paramsMap["pageSize"] = pageSize
 
 	// 获取任务数量
-	count, err := jobModel.GetComplexCount(paramsMap)
+	count, err := jobModel.GetCount(paramsMap)
 	serror.Check(err)
 	// 获取设备列表数据
-	rows, err := jobModel.GetComplexList(paramsMap)
+	rows, err := jobModel.GetList(paramsMap)
 	serror.Check(err)
 	defer rows.Close()
 
+	//定义返回数据类型
+	type resRecord struct {
+		ID          int    `json:"id"`
+		JobType     int    `json:"job_type"`
+		Params      string `json:"params"`
+		JobStatus   int    `json:"job_status"`
+		Result      string `json:"result"`
+		Description string `json:"description"`
+		UpdateTime  string `json:"update_time"`
+		CreateTime  string `json:"create_time"`
+	}
+
 	//初始化数组
-	pubArr := make([]ssd_aos.Record, 0)
+	pubArr := make([]resRecord, 0)
 
 	//循环处理
 	for rows.Next() {
 		oRecord, err := jobModel.ScanRow(rows)
 		serror.Check(err)
 		//计入当前处理数组
-		pubArr = append(pubArr, oRecord)
+		pubArr = append(pubArr, resRecord{
+			ID:          oRecord.ID,
+			JobType:     oRecord.Type,
+			Params:      oRecord.Params,
+			JobStatus:   oRecord.Status,
+			Result:      oRecord.Result,
+			Description: oRecord.Description,
+			UpdateTime:  oRecord.UpdateTime,
+			CreateTime:  oRecord.CreateTime,
+		})
 	}
 
 	//构造实际返回数据
 	type resData struct {
-		Total int              `json:"total"`
-		List  []ssd_aos.Record `json:"list"`
+		Total int         `json:"total"`
+		List  []resRecord `json:"list"`
 	}
 
 	response.ResponseSuccess(w, resData{

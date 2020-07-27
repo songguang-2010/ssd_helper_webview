@@ -14,7 +14,7 @@ import (
 	// "io"
 	"reflect"
 	"strconv"
-	"strings"
+	// "strings"
 )
 
 //Record ...
@@ -69,7 +69,8 @@ func (oi *Job) getFields() (string, error) {
 	dataType := reflect.TypeOf(oRecord)
 	for k := 0; k < dataType.NumField(); k++ {
 		if k == 0 {
-			fields = fmt.Sprintf("%s.%s", table, dataType.Field(k).Tag.Get("json"))
+			// fields = fmt.Sprintf("%s.%s", table, dataType.Field(k).Tag.Get("json"))
+			fields = fmt.Sprintf("%s.%s", table, dataType.Field(k).Name)
 		} else {
 			fields = fmt.Sprintf("%s, %s.%s", fields, table, dataType.Field(k).Tag.Get("json"))
 		}
@@ -111,8 +112,14 @@ func (oi *Job) buildConditions(jobType int, status int) (string, error) {
 
 //GetList ...
 func (oi *Job) GetList(paramsMap map[string]string) (*sql.Rows, error) {
-	jobType := paramsMap["type"]
-	jobStatus := paramsMap["status"]
+	jobType, err := strconv.Atoi(paramsMap["type"])
+	if err != nil {
+		return nil, err
+	}
+	jobStatus, err := strconv.Atoi(paramsMap["status"])
+	if err != nil {
+		return nil, err
+	}
 
 	pageSize, err := strconv.Atoi(paramsMap["pageSize"])
 	if err != nil {
@@ -150,8 +157,14 @@ func (oi *Job) GetList(paramsMap map[string]string) (*sql.Rows, error) {
 
 //GetCount ...
 func (oi *Job) GetCount(paramsMap map[string]string) (int, error) {
-	jobType := paramsMap["type"]
-	jobStatus := paramsMap["status"]
+	jobType, err := strconv.Atoi(paramsMap["type"])
+	if err != nil {
+		return 0, err
+	}
+	jobStatus, err := strconv.Atoi(paramsMap["status"])
+	if err != nil {
+		return 0, err
+	}
 
 	where, err := oi.buildConditions(jobType, jobStatus)
 	if err != nil {
@@ -187,7 +200,7 @@ func (oi *Job) ScanRow(r *sql.Rows) (Record, error) {
 //CreateJob ...
 func CreateJob() (*Job, error) {
 	obj := &Job{}
-	err := obj.OpenDB("common.db.ssd_misc")
+	err := obj.OpenDB("common.db.ssd_aos")
 	if err != nil {
 		return nil, err
 	}

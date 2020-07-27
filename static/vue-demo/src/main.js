@@ -26,6 +26,11 @@ import Tag from 'ant-design-vue/lib/tag'
 import Popconfirm from 'ant-design-vue/lib/popconfirm'
 import 'ant-design-vue/dist/antd.css'
 
+import { Modal} from 'ant-design-vue'
+import {FormModel} from 'ant-design-vue'
+Vue.use(FormModel)
+Vue.use(Modal)
+
 Vue.use(Button)
 Vue.use(Layout)
 Vue.use(Menu)

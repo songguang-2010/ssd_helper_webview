@@ -91,4 +91,16 @@ func InitRouter() {
 		Controller: "WebController",
 		Function:   "GetCanaryAppVersions",
 	})
+	route.AddRoute(route.RouteItem{
+		Method:     "GET",
+		Path:       "/get-aos-jobs",
+		Controller: "WebController",
+		Function:   "GetAosJobs",
+	})
+	route.AddRoute(route.RouteItem{
+		Method:     "POST",
+		Path:       "/add-aos-job",
+		Controller: "WebController",
+		Function:   "AddJob",
+	})
 }
